@@ -1,0 +1,41 @@
+# Root orchestration: Postgres + Serene API + Expo web preview.
+# For day-to-day backend work you can also just use backend/docker-compose.yml.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: serene
+      POSTGRES_PASSWORD: serene
+      POSTGRES_DB: serene
+    volumes:
+      - serene_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U serene"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://serene:serene@db:5432/serene
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Static web build of the Expo app, served by nginx (deployable PWA preview).
+  mobile-web:
+    build:
+      context: ./app-mobile
+      args:
+        EXPO_PUBLIC_API_URL: ${MOBILE_API_URL:-http://localhost:${API_PORT:-8000}}
+    ports:
+      - "${WEB_PORT:-19006}:80"
+    depends_on:
+      - api
+
+volumes:
+  serene_db:

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Serene - Accueil</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#a8e7c5",
+                        "secondary": "#4e653f",
+                        "tertiary": "#484744",
+                        "primary": "#0f5238",
+                        "inverse-primary": "#95d4b3",
+                        "inverse-surface": "#21342b",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#d0ebbb",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#c8c6c2",
+                        "on-tertiary-fixed": "#1c1c19",
+                        "on-secondary-fixed-variant": "#374d2a",
+                        "surface-container": "#ddf3e5",
+                        "primary-fixed": "#b1f0ce",
+                        "primary-fixed-dim": "#95d4b3",
+                        "on-tertiary": "#ffffff",
+                        "on-background": "#0c1f17",
+                        "on-tertiary-fixed-variant": "#474743",
+                        "on-surface-variant": "#404943",
+                        "surface-variant": "#d1e8da",
+                        "surface-bright": "#e8fff1",
+                        "tertiary-fixed": "#e5e2dd",
+                        "surface-container-low": "#e2f9eb",
+                        "surface-container-highest": "#d1e8da",
+                        "outline-variant": "#bfc9c1",
+                        "outline": "#707973",
+                        "secondary-container": "#d0ebbb",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#d7eee0",
+                        "surface-tint": "#2c694e",
+                        "surface": "#e8fff1",
+                        "on-surface": "#0c1f17",
+                        "on-secondary-container": "#546b45",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#2d6a4f",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#0e5138",
+                        "secondary-fixed-dim": "#b5cea1",
+                        "background": "#e8fff1",
+                        "on-tertiary-container": "#dcd9d4",
+                        "surface-dim": "#c9dfd2",
+                        "inverse-on-surface": "#e0f6e8",
+                        "on-secondary-fixed": "#0d2003",
+                        "tertiary-container": "#605f5b",
+                        "on-primary-fixed": "#002114",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "section-gap": "40px",
+                        "container-padding-desktop": "48px",
+                        "gutter": "16px",
+                        "container-padding-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Quicksand"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Quicksand"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "title-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Quicksand"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["26px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .soft-glow {
+            box-shadow: 0 20px 40px -10px rgba(15, 82, 56, 0.08);
+        }
+        .bg-mesh {
+            background: radial-gradient(at 0% 0%, #e8fff1 0%, transparent 50%),
+                        radial-gradient(at 100% 0%, #b1f0ce 0%, transparent 50%),
+                        radial-gradient(at 100% 100%, #e2f9eb 0%, transparent 50%),
+                        radial-gradient(at 0% 100%, #ffffff 0%, transparent 50%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md bg-mesh">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md flex justify-between items-center px-container-mobile py-4 md:px-container-padding-desktop">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="spa">spa</span>
+<h1 class="font-display-lg text-display-lg text-primary">Serene</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-variant hover:scale-105 transition-transform cursor-pointer">
+<img alt="Profil utilisateur" class="w-full h-full object-cover" data-alt="A professional close-up portrait of a woman with a serene expression, softly lit by natural morning light coming through a window. The background is a blurred minimalist interior with soft mint and cream tones, creating a calm and peaceful atmosphere. The photographic style is clean and high-end, aligning with a modern wellness application aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe-iIXju_JN9mGPrRMqRH1bpOW1X3-qZi_gW7GiB1SyH6y4RdmZANBBV9gdxch6y3LSZZCX0mVrVAngcP7dws6Z8hy-LUNo_aNSKoMg_VmYWTJT2i9II2OHnnwmn2K_vQDJqkQ5qTDLtOMxcvRS6TGt1ZxjE_k-YGWhhQ0REde8JH4alU7By6i-ho7Thm-jQ5UASpZrnePM6d5V1I1V48jTsLFyFzx2SEC2EoYLBH7XpPu3piXsq5q3svCgfg060EAWocgS507EIQ"/>
+</div>
+</header>
+<main class="pt-24 pb-32 px-container-mobile md:px-container-padding-desktop max-w-4xl mx-auto space-y-section-gap">
+<!-- Welcome Section -->
+<section class="text-center md:text-left space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-700">
+<p class="font-title-md text-title-md text-secondary opacity-80">Bonjour, Camille</p>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary">Comment vous sentez-vous ?</h2>
+</section>
+<!-- Mood Selector -->
+<section class="grid grid-cols-5 gap-gutter md:gap-8 py-4">
+<button class="group flex flex-col items-center gap-3 transition-all active:scale-95">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary group-hover:bg-primary-fixed group-hover:text-primary transition-colors soft-glow">
+<span class="material-symbols-outlined text-3xl" data-icon="sentiment_very_satisfied">sentiment_very_satisfied</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Calme</span>
+</button>
+<button class="group flex flex-col items-center gap-3 transition-all active:scale-95">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary group-hover:bg-primary-fixed group-hover:text-primary transition-colors soft-glow">
+<span class="material-symbols-outlined text-3xl" data-icon="sentiment_satisfied">sentiment_satisfied</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Joyeux</span>
+</button>
+<button class="group flex flex-col items-center gap-3 transition-all active:scale-95">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary group-hover:bg-primary-fixed group-hover:text-primary transition-colors soft-glow">
+<span class="material-symbols-outlined text-3xl" data-icon="sentiment_neutral">sentiment_neutral</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Neutre</span>
+</button>
+<button class="group flex flex-col items-center gap-3 transition-all active:scale-95">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary group-hover:bg-primary-fixed group-hover:text-primary transition-colors soft-glow">
+<span class="material-symbols-outlined text-3xl" data-icon="sentiment_dissatisfied">sentiment_dissatisfied</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Anxieux</span>
+</button>
+<button class="group flex flex-col items-center gap-3 transition-all active:scale-95">
+<div class="w-14 h-14 md:w-20 md:h-20 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary group-hover:bg-primary-fixed group-hover:text-primary transition-colors soft-glow">
+<span class="material-symbols-outlined text-3xl" data-icon="sentiment_very_dissatisfied">sentiment_very_dissatisfied</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Fatigué</span>
+</button>
+</section>
+<!-- Main Call to Action -->
+<section class="flex flex-col items-center justify-center space-y-6">
+<div class="relative w-full max-w-md aspect-square flex items-center justify-center">
+<!-- Decorative animated rings -->
+<div class="absolute inset-0 rounded-full border-2 border-primary/10 animate-[ping_4s_linear_infinite]"></div>
+<div class="absolute inset-8 rounded-full border-2 border-primary/20 animate-[ping_5s_linear_infinite_1s]"></div>
+<button class="relative z-10 w-48 h-48 rounded-full bg-primary text-on-primary flex flex-col items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-primary/30 group">
+<span class="material-symbols-outlined text-4xl group-hover:rotate-12 transition-transform" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+<span class="font-title-md text-title-md text-center px-4 leading-tight">Commencer une session</span>
+</button>
+</div>
+</section>
+<!-- Quick Summary / Stats -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="bg-surface-container-lowest p-6 rounded-lg soft-glow flex items-center gap-6 border border-surface-variant/30">
+<div class="flex-shrink-0 w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="local_fire_department" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+</div>
+<div>
+<h3 class="font-label-sm text-label-sm text-on-surface-variant">Série actuelle</h3>
+<p class="font-title-md text-title-md text-primary">7 Jours consécutifs</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg soft-glow flex items-center gap-6 border border-surface-variant/30">
+<div class="flex-shrink-0 w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+</div>
+<div>
+<h3 class="font-label-sm text-label-sm text-on-surface-variant">Objectif Hebdo</h3>
+<p class="font-title-md text-title-md text-primary">2/3 sessions complétées</p>
+<div class="w-full h-1.5 bg-surface-container mt-2 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[66%] rounded-full"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Recommendation Section -->
+<section class="space-y-4">
+<div class="flex justify-between items-end">
+<h3 class="font-title-md text-title-md text-primary">Recommandé pour vous</h3>
+<button class="text-secondary font-label-sm text-label-sm hover:underline">Voir tout</button>
+</div>
+<div class="flex gap-gutter overflow-x-auto pb-4 -mx-container-mobile px-container-mobile no-scrollbar">
+<div class="flex-none w-64 bg-surface-container-lowest rounded-lg overflow-hidden soft-glow group cursor-pointer transition-transform hover:-translate-y-1">
+<div class="h-32 relative">
+<img alt="Méditation au lever du soleil" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A breathtaking view of a mountain range at sunrise, with soft golden light hitting the peaks. The sky is a gradient of pale pink and orange. In the foreground, there is a silhouette of a person sitting in a meditation pose. The style is soft, airy, and high-definition photography with a peaceful and serene mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-QP2RTz1ElW-h90L2FGjL-tQQZMWukgqcWCBaFdDLnzRRDZqOxynilx6RDrvRr8YKl0tqG_BKmAC2PS39LyyPgIg4x1wEsABuhpsDLB06rJX2aVEqkML7AlRkPwTRx6JCda6IX05BlHjLJkpA5sHNgGSNrajbWRaiUSFXvuBjl6AfIutToUIPpZKZTSCtlz1_sGb4V0fEeDK-2I4gOLjQTUWCdtb9D5SpzhKbCmRLTPyj5oQfhPey8FA3ghg8WZQ7JzcvH6Pd2lE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<span class="absolute bottom-2 right-2 px-2 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-[10px] font-bold">10 MIN</span>
+</div>
+<div class="p-4">
+<h4 class="font-label-sm text-on-surface">Apaisement matinal</h4>
+<p class="text-xs text-on-surface-variant">Respiration guidée</p>
+</div>
+</div>
+<div class="flex-none w-64 bg-surface-container-lowest rounded-lg overflow-hidden soft-glow group cursor-pointer transition-transform hover:-translate-y-1">
+<div class="h-32 relative">
+<img alt="Forêt calme" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A lush, sun-drenched forest with tall trees and vibrant green foliage. Sunlight filters through the leaves, creating a beautiful 'komorebi' effect on the forest floor. The scene is incredibly peaceful and lush, captured in a soft-focus style that emphasizes the natural beauty and calm of the wilderness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUpk0PBiW0TIzAQDtoQ_2kjDcBwi8WeVxli3n9IsctkMkxK_m7kT_WNhzwXz_ZFLOtKRX-DIWI-wQL3ysn_W5lC_wj_kp355sFjA9R0QAZ3mb71JDqO49x3IJ60xKWaSNNnyEDwavcwUVJ3QoG1hgm0sF1JNNi9kqA4JHR64Luya5D640Dw9lizL4Zfmm5xOLI_wWV4tVXPXgWyWDMFYvs8Ii0NcfF9U6MkLMm83emRm7ewRAbh3aeBpuV15jWEoI2J4e3-WbjXeo"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<span class="absolute bottom-2 right-2 px-2 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-[10px] font-bold">15 MIN</span>
+</div>
+<div class="p-4">
+<h4 class="font-label-sm text-on-surface">Marche en forêt</h4>
+<p class="text-xs text-on-surface-variant">ASMR Nature</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-3 bg-surface-container-low/95 backdrop-blur-lg shadow-[0_-4px_20px_0_rgba(15,82,56,0.08)] rounded-t-lg md:hidden">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-label-sm text-label-sm">Progress</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</nav>
+<!-- Floating Action Button Contextual Logic (Excluded based on focus) -->
+<script>
+        // Micro-interaction for mood buttons
+        const moodButtons = document.querySelectorAll('button.group');
+        moodButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                moodButtons.forEach(b => b.querySelector('div').classList.remove('bg-primary-fixed', 'text-primary'));
+                btn.querySelector('div').classList.add('bg-primary-fixed', 'text-primary');
+            });
+        });
+
+        // Add a subtle scroll effect to the header
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 20) {
+                header.classList.add('shadow-sm');
+            } else {
+                header.classList.remove('shadow-sm');
+            }
+        });
+    </script>
+</body></html>

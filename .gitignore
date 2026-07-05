@@ -1,0 +1,10 @@
+# --- macOS resource forks ---
+__MACOSX/
+.DS_Store
+
+# --- Third-party project (not part of Serene) ---
+antigravity-awesome-skills/
+
+# --- Root-level artifacts ---
+package-lock.json
+ruvector.db

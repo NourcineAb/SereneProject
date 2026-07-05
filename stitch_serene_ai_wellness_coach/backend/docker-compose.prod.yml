@@ -1,0 +1,49 @@
+# Production backend stack. No --reload, no source bind-mount, DB not exposed to
+# the host, runs in ENVIRONMENT=production (which refuses to boot with a weak
+# JWT secret, mock billing on, or CORS=*). Provide secrets via the shell env or
+# an .env file in this directory.
+#
+#   JWT_SECRET=$(python -c 'import secrets;print(secrets.token_urlsafe(48))') \
+#   POSTGRES_PASSWORD=... CORS_ORIGINS=https://app.serene.example \
+#   GEMINI_API_KEY=... docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-serene}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-serene}
+      POSTGRES_DB: ${POSTGRES_DB:-serene}
+    volumes:
+      - serene_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-serene}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build: .
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-serene}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-serene}
+      JWT_SECRET: ${JWT_SECRET:?generate one - python -c 'import secrets;print(secrets.token_urlsafe(48))'}
+      ALLOW_MOCK_BILLING: "false"
+      CORS_ORIGINS: ${CORS_ORIGINS:?set explicit allowed origins, not *}
+      LLM_PRIMARY: ${LLM_PRIMARY:-gemini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-meta-llama/llama-3.3-70b-instruct:free}
+      MONETIZATION_MODE: ${MONETIZATION_MODE:-iap}
+      REVENUECAT_WEBHOOK_SECRET: ${REVENUECAT_WEBHOOK_SECRET:-}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  serene_db:

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Serene - Tableau de bord de progression</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #e8fff1;
+            -webkit-font-smoothing: antialiased;
+        }
+        .soft-glow-card {
+            box-shadow: 0 20px 40px -10px rgba(15, 82, 56, 0.08);
+        }
+        .bar-transition {
+            transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        .breathe-element {
+            animation: breathe 4s ease-in-out infinite;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-container": "#a8e7c5",
+                      "secondary": "#4e653f",
+                      "tertiary": "#484744",
+                      "primary": "#0f5238",
+                      "inverse-primary": "#95d4b3",
+                      "inverse-surface": "#21342b",
+                      "on-error": "#ffffff",
+                      "secondary-fixed": "#d0ebbb",
+                      "error": "#ba1a1a",
+                      "tertiary-fixed-dim": "#c8c6c2",
+                      "on-tertiary-fixed": "#1c1c19",
+                      "on-secondary-fixed-variant": "#374d2a",
+                      "surface-container": "#ddf3e5",
+                      "primary-fixed": "#b1f0ce",
+                      "primary-fixed-dim": "#95d4b3",
+                      "on-tertiary": "#ffffff",
+                      "on-background": "#0c1f17",
+                      "on-tertiary-fixed-variant": "#474743",
+                      "on-surface-variant": "#404943",
+                      "surface-variant": "#d1e8da",
+                      "surface-bright": "#e8fff1",
+                      "tertiary-fixed": "#e5e2dd",
+                      "surface-container-low": "#e2f9eb",
+                      "surface-container-highest": "#d1e8da",
+                      "outline-variant": "#bfc9c1",
+                      "outline": "#707973",
+                      "secondary-container": "#d0ebbb",
+                      "error-container": "#ffdad6",
+                      "surface-container-high": "#d7eee0",
+                      "surface-tint": "#2c694e",
+                      "surface": "#e8fff1",
+                      "on-surface": "#0c1f17",
+                      "on-secondary-container": "#546b45",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "primary-container": "#2d6a4f",
+                      "on-primary": "#ffffff",
+                      "on-primary-fixed-variant": "#0e5138",
+                      "secondary-fixed-dim": "#b5cea1",
+                      "background": "#e8fff1",
+                      "on-tertiary-container": "#dcd9d4",
+                      "surface-dim": "#c9dfd2",
+                      "inverse-on-surface": "#e0f6e8",
+                      "on-secondary-fixed": "#0d2003",
+                      "tertiary-container": "#605f5b",
+                      "on-primary-fixed": "#002114",
+                      "on-secondary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "unit": "8px",
+                      "section-gap": "40px",
+                      "container-padding-desktop": "48px",
+                      "gutter": "16px",
+                      "container-padding-mobile": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": ["Quicksand"],
+                      "label-sm": ["Plus Jakarta Sans"],
+                      "headline-lg-mobile": ["Quicksand"],
+                      "body-lg": ["Plus Jakarta Sans"],
+                      "title-md": ["Plus Jakarta Sans"],
+                      "headline-lg": ["Quicksand"],
+                      "body-md": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["26px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-container-mobile py-4 w-full sticky top-0 bg-background z-40">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-3xl">spa</span>
+<h1 class="font-display-lg text-display-lg text-primary">Serene</h1>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden border-2 border-primary-fixed">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="A close-up portrait of a serene woman with a soft smile, set against a blurred natural background of sage green foliage. The lighting is warm and ethereal, highlighting her peaceful expression. This high-quality photography matches the calm, organic aesthetic of the Serene brand with soft focus and professional composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-HgyoBT0JsuAaz2Ufu9-KsZC6F-tfycrxzXEEYWOxRU3j3u2Nwev7Kw5kO17a1pywaS3-tJ8F0wTsvJ6bkU2xoquOwBzP4YoSf8tGPop_4LL2mnchMcunZ9IaI43woiRtIVQsKYeVEcYNHSP5h1Lu1nwyEiyvpFjj4Tp_jf69kSjxf3NjGTri29in6KozmCCYCwBiFzZmwvB-ZNIkJfx3BIcVn9hmSTbPch1zzS9xUVLhxX8p48oTL1DGlkZuWLu40EyY3pi2PhM"/>
+</div>
+</header>
+<main class="px-container-mobile md:px-container-desktop mt-4 max-w-4xl mx-auto">
+<!-- Encouragement Message -->
+<section class="mb-section-gap">
+<div class="bg-primary text-on-primary p-8 rounded-lg soft-glow-card relative overflow-hidden">
+<div class="relative z-10">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-2">Bon travail !</h2>
+<p class="font-body-lg text-body-lg opacity-90">Votre anxiété est en baisse de 18% cette semaine. Vous faites des progrès remarquables dans votre voyage vers la sérénité.</p>
+</div>
+<!-- Abstract organic background shape -->
+<div class="absolute -right-10 -bottom-10 w-40 h-40 bg-on-primary-container opacity-20 rounded-full blur-3xl breathe-element"></div>
+</div>
+</section>
+<!-- Stats Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-gutter mb-section-gap">
+<div class="bg-surface-container-lowest p-6 rounded-lg soft-glow-card flex items-center gap-4 border border-surface-variant">
+<div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-2xl">sentiment_satisfied</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-outline uppercase">Humeur moyenne</p>
+<p class="font-display-lg text-display-lg text-primary">6.8<span class="text-body-md text-outline">/10</span></p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg soft-glow-card flex items-center gap-4 border border-surface-variant">
+<div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-2xl">event_repeat</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-outline uppercase">Sessions totales</p>
+<p class="font-display-lg text-display-lg text-primary">12</p>
+</div>
+</div>
+</section>
+<!-- Mood Chart -->
+<section class="bg-surface-container-lowest p-8 rounded-lg soft-glow-card border border-surface-variant mb-section-gap">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Évolution de l'humeur</h3>
+<p class="font-body-md text-body-md text-outline">Les 7 derniers jours</p>
+</div>
+<div class="flex gap-2">
+<span class="flex items-center gap-1 font-label-sm text-label-sm text-secondary">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Stabilité
+                    </span>
+</div>
+</div>
+<!-- Bar Chart Container -->
+<div class="h-64 flex items-end justify-between gap-2 md:gap-4 px-2">
+<!-- Day 1 -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-surface-container-high rounded-t-full relative group">
+<div class="absolute bottom-0 w-full bg-primary rounded-t-full bar-transition" style="height: 60%;"></div>
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">6.0</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Lun</span>
+</div>
+<!-- Day 2 -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-surface-container-high rounded-t-full relative group">
+<div class="absolute bottom-0 w-full bg-primary rounded-t-full bar-transition" style="height: 45%;"></div>
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">4.5</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Mar</span>
+</div>
+<!-- Day 3 -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-surface-container-high rounded-t-full relative group">
+<div class="absolute bottom-0 w-full bg-primary rounded-t-full bar-transition" style="height: 75%;"></div>
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">7.5</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Mer</span>
+</div>
+<!-- Day 4 -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-surface-container-high rounded-t-full relative group">
+<div class="absolute bottom-0 w-full bg-primary rounded-t-full bar-transition" style="height: 65%;"></div>
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">6.5</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Jeu</span>
+</div>
+<!-- Day 5 -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-surface-container-high rounded-t-full relative group">
+<div class="absolute bottom-0 w-full bg-primary rounded-t-full bar-transition" style="height: 85%;"></div>
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">8.5</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Ven</span>
+</div>
+<!-- Day 6 -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-surface-container-high rounded-t-full relative group">
+<div class="absolute bottom-0 w-full bg-primary rounded-t-full bar-transition" style="height: 70%;"></div>
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">7.0</div>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Sam</span>
+</div>
+<!-- Day 7 (Today) -->
+<div class="flex-1 flex flex-col items-center gap-3">
+<div class="w-full bg-surface-container-high rounded-t-full relative group">
+<div class="absolute bottom-0 w-full bg-primary rounded-t-full bar-transition shadow-[0_0_15px_rgba(15,82,56,0.3)]" style="height: 80%;"></div>
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-primary text-on-primary text-xs px-2 py-1 rounded opacity-100 transition-opacity">8.0</div>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold">Dim</span>
+</div>
+</div>
+</section>
+<!-- Upcoming Activities -->
+<section>
+<h3 class="font-title-md text-title-md text-on-surface mb-4">Recommandé pour vous</h3>
+<div class="space-y-4">
+<div class="bg-surface-container-low p-5 rounded-lg border border-surface-variant flex items-center justify-between group cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">air</span>
+</div>
+<div>
+<p class="font-title-md text-body-md font-semibold">Respiration profonde</p>
+<p class="font-label-sm text-label-sm text-outline">5 minutes • Calme immédiat</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>
+</div>
+<div class="bg-surface-container-low p-5 rounded-lg border border-surface-variant flex items-center justify-between group cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">self_improvement</span>
+</div>
+<div>
+<p class="font-title-md text-body-md font-semibold">Méditation de pleine conscience</p>
+<p class="font-label-sm text-label-sm text-outline">15 minutes • Réduction du stress</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-surface-container-low dark:bg-inverse-surface rounded-t-lg shadow-[0_-4px_20px_0_rgba(15,82,56,0.08)]">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-sm text-label-sm mt-1">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+<span class="font-label-sm text-label-sm mt-1">Progress</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm mt-1">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple animation trigger for chart bars on load
+        window.addEventListener('load', () => {
+            const bars = document.querySelectorAll('.bar-transition');
+            bars.forEach((bar, index) => {
+                const finalHeight = bar.style.height;
+                bar.style.height = '0%';
+                setTimeout(() => {
+                    bar.style.height = finalHeight;
+                }, 200 + (index * 100));
+            });
+        });
+    </script>
+</body></html>

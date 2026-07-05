@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#a8e7c5",
+                    "secondary": "#4e653f",
+                    "tertiary": "#484744",
+                    "primary": "#0f5238",
+                    "inverse-primary": "#95d4b3",
+                    "inverse-surface": "#21342b",
+                    "on-error": "#ffffff",
+                    "secondary-fixed": "#d0ebbb",
+                    "error": "#ba1a1a",
+                    "tertiary-fixed-dim": "#c8c6c2",
+                    "on-tertiary-fixed": "#1c1c19",
+                    "on-secondary-fixed-variant": "#374d2a",
+                    "surface-container": "#ddf3e5",
+                    "primary-fixed": "#b1f0ce",
+                    "primary-fixed-dim": "#95d4b3",
+                    "on-tertiary": "#ffffff",
+                    "on-background": "#0c1f17",
+                    "on-tertiary-fixed-variant": "#474743",
+                    "on-surface-variant": "#404943",
+                    "surface-variant": "#d1e8da",
+                    "surface-bright": "#e8fff1",
+                    "tertiary-fixed": "#e5e2dd",
+                    "surface-container-low": "#e2f9eb",
+                    "surface-container-highest": "#d1e8da",
+                    "outline-variant": "#bfc9c1",
+                    "outline": "#707973",
+                    "secondary-container": "#d0ebbb",
+                    "error-container": "#ffdad6",
+                    "surface-container-high": "#d7eee0",
+                    "surface-tint": "#2c694e",
+                    "surface": "#e8fff1",
+                    "on-surface": "#0c1f17",
+                    "on-secondary-container": "#546b45",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "primary-container": "#2d6a4f",
+                    "on-primary": "#ffffff",
+                    "on-primary-fixed-variant": "#0e5138",
+                    "secondary-fixed-dim": "#b5cea1",
+                    "background": "#e8fff1",
+                    "on-tertiary-container": "#dcd9d4",
+                    "surface-dim": "#c9dfd2",
+                    "inverse-on-surface": "#e0f6e8",
+                    "on-secondary-fixed": "#0d2003",
+                    "tertiary-container": "#605f5b",
+                    "on-primary-fixed": "#002114",
+                    "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "section-gap": "40px",
+                    "container-padding-desktop": "48px",
+                    "gutter": "16px",
+                    "container-padding-mobile": "24px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Quicksand"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Quicksand"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "title-md": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Quicksand"],
+                    "body-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["26px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .chat-bubble-ia {
+            border-bottom-left-radius: 4px;
+        }
+        .chat-bubble-user {
+            border-bottom-right-radius: 4px;
+        }
+        .ambient-glow {
+            box-shadow: 0 20px 40px -10px rgba(15, 82, 56, 0.08);
+        }
+        body {
+            background-color: #e8fff1;
+            scroll-behavior: smooth;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-background min-h-screen flex flex-col">
+<!-- Top Navigation Header -->
+<header class="bg-background dark:bg-background fixed full-width top-0 w-full z-40 flex justify-between items-center px-container-mobile py-4 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-[32px]" data-icon="spa">spa</span>
+<h1 class="font-display-lg text-display-lg text-primary">Serene</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low transition-colors p-2 rounded-full active:scale-95 transition-transform" data-icon="search">search</button>
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden border-2 border-primary-fixed">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A professional studio portrait of a woman with a serene expression, soft natural lighting, set against a minimalist pale green background. The style is clean, modern, and high-end, reflecting a wellness and mental health application aesthetic with organic tones and soft shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEMXu3HLCCeYFFLrHVyJwLlFUpFBaMimedkIv8ghXkRg_aGyJ77Y0SqQ5qc1A6OgDJEYP0-GmFgkXvabI36H1EGu_q9jpksh_ecqZh82SYoVkm2x27goGNNEL8hOMdSqnG5xy_TYbHFvovDLuM_D9pfZeHxFduaKh4nX6FD9aU4Bx_pKYuuXb9ZnhLDNP_AIxbAJ_bmNtL6fyeIMpFbNuNvefaNKoKMTQxLg2mUBpXPkigKHtV7tErmvM_0puJ63McMEcrDwQNk8Q"/>
+</div>
+</div>
+</header>
+<!-- Main Chat Canvas -->
+<main class="flex-1 mt-20 mb-32 px-container-mobile max-w-3xl mx-auto w-full">
+<!-- Welcome Card (Subtle Elevation) -->
+<div class="mb-section-gap pt-8 text-center">
+<p class="font-label-sm text-label-sm text-outline mb-2">AUJOURD'HUI</p>
+<div class="inline-block px-4 py-2 bg-surface-container-low rounded-full text-secondary text-sm">
+                Votre session de calme avec Serene
+            </div>
+</div>
+<!-- Chat Conversation Area -->
+<div class="flex flex-col gap-6" id="chat-container">
+<!-- AI Message -->
+<div class="flex items-end gap-3 max-w-[85%] animate-fade-in-up">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-variant p-5 rounded-lg chat-bubble-ia ambient-glow">
+<p class="font-body-md text-primary leading-relaxed">Bonjour ! Qu'est-ce qui vous pèse aujourd'hui ?</p>
+<span class="text-[10px] text-outline mt-2 block opacity-60">10:42 AM</span>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex items-end justify-end gap-3 max-w-[85%] ml-auto">
+<div class="bg-primary text-on-primary p-5 rounded-lg chat-bubble-user ambient-glow">
+<p class="font-body-md leading-relaxed">Le travail me submerge</p>
+<span class="text-[10px] text-primary-fixed-dim mt-2 block text-right opacity-80">10:43 AM</span>
+</div>
+</div>
+<!-- AI Response (Typing Indicator/Thinking) -->
+<div class="flex items-end gap-3 max-w-[85%]">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div class="bg-surface-container-lowest border border-surface-variant p-5 rounded-lg chat-bubble-ia ambient-glow italic text-outline flex items-center gap-2">
+<div class="flex space-x-1">
+<div class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></div>
+<div class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+<div class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Suggestion Chips (Bento Style) -->
+<div class="mt-section-gap grid grid-cols-2 gap-3 md:grid-cols-3">
+<button class="bg-surface-container-low hover:bg-surface-container-high transition-all p-4 rounded-xl text-left border border-outline-variant/30 active:scale-95">
+<span class="material-symbols-outlined text-primary block mb-2" data-icon="self_care">self_care</span>
+<p class="font-label-sm text-label-sm text-secondary">Exercice de respiration</p>
+</button>
+<button class="bg-surface-container-low hover:bg-surface-container-high transition-all p-4 rounded-xl text-left border border-outline-variant/30 active:scale-95">
+<span class="material-symbols-outlined text-primary block mb-2" data-icon="assignment">assignment</span>
+<p class="font-label-sm text-label-sm text-secondary">Prioriser mes tâches</p>
+</button>
+<button class="bg-surface-container-low hover:bg-surface-container-high transition-all p-4 rounded-xl text-left border border-outline-variant/30 active:scale-95 hidden md:block">
+<span class="material-symbols-outlined text-primary block mb-2" data-icon="bedtime">bedtime</span>
+<p class="font-label-sm text-label-sm text-secondary">Gérer mon sommeil</p>
+</button>
+</div>
+</main>
+<!-- Bottom Input Area (Fixed) -->
+<div class="fixed bottom-24 w-full px-container-mobile md:px-0 flex justify-center z-50">
+<div class="w-full max-w-2xl bg-surface-container-lowest border border-surface-variant rounded-full flex items-center px-4 py-3 shadow-[0_10px_40px_-10px_rgba(15,82,56,0.15)] backdrop-blur-md">
+<button class="material-symbols-outlined text-outline hover:text-primary transition-colors p-2" data-icon="add_circle">add_circle</button>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-outline/60 px-4 font-body-md" placeholder="Dites-moi tout..." type="text"/>
+<button class="w-10 h-10 bg-primary text-on-primary rounded-full flex items-center justify-center active:scale-90 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="send" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+<!-- Persistent Bottom Nav Bar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-surface-container-low dark:bg-inverse-surface shadow-[0_-4px_20px_0_rgba(15,82,56,0.08)] rounded-t-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="chat_bubble" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-label-sm text-label-sm">Progress</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for the input field
+        const input = document.querySelector('input');
+        const sendBtn = document.querySelector('.w-10.h-10.bg-primary');
+        
+        input.addEventListener('focus', () => {
+            input.parentElement.classList.add('ring-2', 'ring-primary/20', 'border-primary');
+        });
+        
+        input.addEventListener('blur', () => {
+            input.parentElement.classList.remove('ring-2', 'ring-primary/20', 'border-primary');
+        });
+
+        // Simple send animation effect
+        sendBtn.addEventListener('click', () => {
+            if (input.value.trim() !== "") {
+                const chatContainer = document.getElementById('chat-container');
+                const userMsg = document.createElement('div');
+                userMsg.className = "flex items-end justify-end gap-3 max-w-[85%] ml-auto";
+                userMsg.innerHTML = `
+                    <div class="bg-primary text-on-primary p-5 rounded-lg chat-bubble-user ambient-glow transition-all scale-95 opacity-0">
+                        <p class="font-body-md leading-relaxed">${input.value}</p>
+                        <span class="text-[10px] text-primary-fixed-dim mt-2 block text-right opacity-80">Just now</span>
+                    </div>
+                `;
+                chatContainer.appendChild(userMsg);
+                setTimeout(() => {
+                   userMsg.querySelector('.chat-bubble-user').classList.remove('scale-95', 'opacity-0');
+                }, 50);
+                input.value = "";
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+        });
+    </script>
+</body></html>
