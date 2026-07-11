@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -10,17 +12,29 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth';
+import { useColors, useType } from '../lib/theme-provider';
+import { useI18n } from '../lib/i18n';
 import { PillButton } from '../components/ui';
-import { colors, radius, spacing, type } from '../theme/serene';
+import { radius, spacing } from '../theme/serene';
+import { isAppleAvailable, signInWithApple, signInWithGoogle } from '../lib/social-auth';
 
 export default function Login() {
   const { signIn, signUp } = useAuth();
+  const colors = useColors();
+  const type = useType();
+  const { t } = useI18n();
   const [mode, setMode] = useState<'login' | 'register'>('register');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [appleEnabled, setAppleEnabled] = useState(false);
+  const [socialBusy, setSocialBusy] = useState(false);
+
+  useEffect(() => {
+    isAppleAvailable().then(setAppleEnabled);
+  }, []);
 
   const submit = async () => {
     setError(null);
@@ -30,40 +44,66 @@ export default function Login() {
       else await signIn(email.trim(), password);
       router.replace('/(tabs)');
     } catch (e: any) {
-      setError(e.message ?? 'Something went wrong');
+      setError(e.message ?? t('error.generic'));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setError(null);
+    setSocialBusy(true);
+    try {
+      const result = await signInWithApple();
+      if (result) router.replace('/(tabs)');
+    } catch (e: any) {
+      setError(e.message ?? t('error.generic'));
+    } finally {
+      setSocialBusy(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError(null);
+    setSocialBusy(true);
+    try {
+      const result = await signInWithGoogle();
+      if (result) router.replace('/(tabs)');
+    } catch (e: any) {
+      setError(e.message ?? t('error.generic'));
+    } finally {
+      setSocialBusy(false);
     }
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <View style={styles.brand}>
         <Ionicons name="leaf" size={36} color={colors.primary} />
         <Text style={[type.displayLg, { color: colors.primary }]}>Serene</Text>
       </View>
       <Text style={[type.headlineLg, { color: colors.primary, marginBottom: 4 }]}>
-        {mode === 'register' ? 'Bienvenue' : 'Bon retour'}
+        {mode === 'register' ? t('auth.welcome') : t('auth.welcomeBack')}
       </Text>
       <Text style={[type.bodyMd, { color: colors.onSurfaceVariant, marginBottom: spacing.section }]}>
-        Votre refuge contre le stress du quotidien.
+        {t('auth.subtitle')}
       </Text>
 
       {mode === 'register' && (
         <TextInput
-          style={styles.input}
-          placeholder="Votre prénom"
+          style={[styles.input, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.outlineVariant, color: colors.onSurface, fontFamily: type.bodyMd.fontFamily }]}
+          placeholder={t('auth.firstName')}
           placeholderTextColor={colors.outline}
           value={name}
           onChangeText={setName}
         />
       )}
       <TextInput
-        style={styles.input}
-        placeholder="Email"
+        style={[styles.input, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.outlineVariant, color: colors.onSurface, fontFamily: type.bodyMd.fontFamily }]}
+        placeholder={t('auth.email')}
         placeholderTextColor={colors.outline}
         autoCapitalize="none"
         keyboardType="email-address"
@@ -71,8 +111,8 @@ export default function Login() {
         onChangeText={setEmail}
       />
       <TextInput
-        style={styles.input}
-        placeholder="Mot de passe"
+        style={[styles.input, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.outlineVariant, color: colors.onSurface, fontFamily: type.bodyMd.fontFamily }]}
+        placeholder={t('auth.password')}
         placeholderTextColor={colors.outline}
         secureTextEntry
         value={password}
@@ -82,7 +122,7 @@ export default function Login() {
       {error && <Text style={{ color: colors.error, marginBottom: 12 }}>{error}</Text>}
 
       <PillButton
-        label={mode === 'register' ? 'Créer mon compte' : 'Se connecter'}
+        label={mode === 'register' ? t('auth.createAccount') : t('auth.signIn')}
         onPress={submit}
         loading={busy}
         style={{ marginTop: 8 }}
@@ -91,10 +131,60 @@ export default function Login() {
         onPress={() => setMode(mode === 'register' ? 'login' : 'register')}
         style={[type.bodyMd, { color: colors.secondary, textAlign: 'center', marginTop: 20 }]}
         accessibilityRole="button"
-        accessibilityLabel={mode === 'register' ? 'Déjà un compte ? Se connecter' : 'Nouveau ? Créer un compte'}
+        accessibilityLabel={mode === 'register' ? t('auth.hasAccount') : t('auth.noAccount')}
       >
-        {mode === 'register' ? 'Déjà un compte ? Se connecter' : 'Nouveau ? Créer un compte'}
+        {mode === 'register' ? t('auth.hasAccount') : t('auth.noAccount')}
       </Text>
+
+      {mode === 'login' && (
+        <Text
+          onPress={() => router.push('/forgot-password')}
+          style={[type.bodyMd, { color: colors.outline, textAlign: 'center', marginTop: 12 }]}
+          accessibilityRole="button"
+        >
+          {t('auth.forgotPassword')}
+        </Text>
+      )}
+
+      <View style={styles.divider}>
+        <View style={[styles.dividerLine, { backgroundColor: colors.outlineVariant }]} />
+        <Text style={[type.bodyMd, { color: colors.outline }]}>{t('auth.orContinueWith')}</Text>
+        <View style={[styles.dividerLine, { backgroundColor: colors.outlineVariant }]} />
+      </View>
+
+      {appleEnabled && (
+        <Pressable
+          onPress={handleAppleLogin}
+          disabled={socialBusy}
+          accessibilityRole="button"
+          accessibilityLabel={t('auth.appleSignIn')}
+          style={({ pressed }) => [
+            styles.socialBtn,
+            styles.appleBtn,
+            pressed && { opacity: 0.7 },
+            socialBusy && { opacity: 0.5 },
+          ]}
+        >
+          <Ionicons name="logo-apple" size={22} color="#000000" />
+          <Text style={[styles.appleBtnText, { fontFamily: type.titleMd.fontFamily }]}>{t('auth.appleSignIn')}</Text>
+        </Pressable>
+      )}
+
+      <Pressable
+        onPress={handleGoogleLogin}
+        disabled={socialBusy}
+        accessibilityRole="button"
+        accessibilityLabel={t('auth.googleSignIn')}
+        style={({ pressed }) => [
+          styles.socialBtn,
+          { backgroundColor: colors.surfaceContainerLowest, borderWidth: 1.5, borderColor: colors.outlineVariant },
+          pressed && { opacity: 0.7 },
+          socialBusy && { opacity: 0.5 },
+        ]}
+      >
+        <Ionicons name="logo-google" size={22} color="#4285F4" />
+        <Text style={[styles.googleBtnText, { color: colors.onSurface, fontFamily: type.titleMd.fontFamily }]}>{t('auth.googleSignIn')}</Text>
+      </Pressable>
     </KeyboardAvoidingView>
   );
 }
@@ -102,21 +192,46 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
     padding: spacing.containerMobile,
     justifyContent: 'center',
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.section },
   input: {
-    backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 1.5,
-    borderColor: colors.outlineVariant,
     borderRadius: radius.full,
     paddingVertical: 16,
     paddingHorizontal: 22,
     marginBottom: 14,
-    color: colors.onSurface,
-    fontFamily: type.bodyMd.fontFamily,
+    fontSize: 16,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  socialBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    marginBottom: 12,
+    gap: 12,
+  },
+  appleBtn: {
+    backgroundColor: '#000000',
+  },
+  appleBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  googleBtnText: {
     fontSize: 16,
   },
 });

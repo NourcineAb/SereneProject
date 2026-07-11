@@ -1,16 +1,17 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, router } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api, Progress as ProgressData } from '../../lib/api';
+import { useI18n } from '../../lib/i18n';
 import { Card } from '../../components/ui';
-import { colors, radius, spacing, type } from '../../theme/serene';
+import { useColors, useType } from '../../lib/theme-provider';
+import { radius, spacing } from '../../theme/serene';
 
 const DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-// Mood score bands → colour for the chart bars
-function moodColor(score: number): string {
+function moodColor(score: number, colors: ReturnType<typeof import('../../lib/theme-provider').useColors>) {
   if (score >= 8) return colors.primary;
   if (score >= 6) return colors.primaryFixedDim;
   if (score >= 4) return colors.secondary;
@@ -19,6 +20,9 @@ function moodColor(score: number): string {
 
 export default function Progress() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
+  const colors = useColors();
+  const type = useType();
   const [data, setData] = useState<ProgressData | null>(null);
 
   useFocusEffect(
@@ -40,38 +44,38 @@ export default function Progress() {
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={{ padding: spacing.containerMobile, paddingTop: insets.top + 16, gap: spacing.section }}
     >
-      <Text style={[type.headlineLg, { color: colors.primary }]}>Vos progrès</Text>
+      <Text style={[type.headlineLg, { color: colors.primary }]}>{t('progress.title')}</Text>
 
       {/* Top stats */}
       <View style={styles.statsRow}>
-        <StatCard
-          value={`${data?.streak_days ?? 0}`}
-          label="série"
-          icon="flame"
-          iconBg={colors.secondaryContainer}
-          iconColor={colors.secondary}
-        />
-        <StatCard
-          value={`${data?.sessions_this_week ?? 0}`}
-          label="sessions"
-          icon="chatbubble-ellipses"
-          iconBg={colors.primaryFixed}
-          iconColor={colors.primary}
-        />
-        <StatCard
-          value={data ? data.avg_mood.toFixed(1) : '—'}
-          label="humeur moy."
-          icon="happy-outline"
-          iconBg={colors.primaryFixed}
-          iconColor={colors.primary}
-        />
+        <Card style={{ flex: 1, alignItems: 'center', paddingVertical: 16, gap: 8 }}>
+          <View style={[styles.statIcon, { backgroundColor: colors.secondaryContainer }]}>
+            <Ionicons name="flame" size={20} color={colors.secondary} />
+          </View>
+          <Text style={[type.displayLg, { color: colors.primary, fontSize: 26 }]}>{data?.streak_days ?? 0}</Text>
+          <Text style={[type.labelSm, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>{t('progress.streak')}</Text>
+        </Card>
+        <Card style={{ flex: 1, alignItems: 'center', paddingVertical: 16, gap: 8 }}>
+          <View style={[styles.statIcon, { backgroundColor: colors.primaryFixed }]}>
+            <Ionicons name="chatbubble-ellipses" size={20} color={colors.primary} />
+          </View>
+          <Text style={[type.displayLg, { color: colors.primary, fontSize: 26 }]}>{data?.sessions_this_week ?? 0}</Text>
+          <Text style={[type.labelSm, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>{t('progress.sessions')}</Text>
+        </Card>
+        <Card style={{ flex: 1, alignItems: 'center', paddingVertical: 16, gap: 8 }}>
+          <View style={[styles.statIcon, { backgroundColor: colors.primaryFixed }]}>
+            <Ionicons name="happy-outline" size={20} color={colors.primary} />
+          </View>
+          <Text style={[type.displayLg, { color: colors.primary, fontSize: 26 }]}>{data ? data.avg_mood.toFixed(1) : '—'}</Text>
+          <Text style={[type.labelSm, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>{t('progress.avgMood')}</Text>
+        </Card>
       </View>
 
       {/* Mood trend chart */}
       <Card style={{ gap: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={[type.titleMd, { color: colors.primary }]}>7 derniers jours</Text>
-          <Text style={[type.labelSm, { color: colors.outline }]}>Humeur (0–10)</Text>
+          <Text style={[type.titleMd, { color: colors.primary }]}>{t('progress.chartTitle')}</Text>
+          <Text style={[type.labelSm, { color: colors.outline }]}>{t('progress.chartLabel')}</Text>
         </View>
 
         {hasData ? (
@@ -88,13 +92,13 @@ export default function Progress() {
                             styles.bar,
                             {
                               height: `${heightPct}%`,
-                              backgroundColor: moodColor(v),
+                              backgroundColor: moodColor(v, colors),
                             },
                           ]}
                         />
                       )}
                       {v === 0 && (
-                        <View style={styles.barEmpty} />
+                        <View style={[styles.barEmpty, { backgroundColor: colors.surfaceContainerHigh }]} />
                       )}
                     </View>
                     {v > 0 && (
@@ -107,12 +111,11 @@ export default function Progress() {
                 );
               })}
             </View>
-            {/* Legend */}
             <View style={styles.legend}>
               {[
-                { color: colors.primary, label: 'Serein (8-10)' },
-                { color: colors.primaryFixedDim, label: 'Neutre (6-7)' },
-                { color: colors.secondary, label: 'Tendu (4-5)' },
+                { color: colors.primary, label: t('progress.calm') },
+                { color: colors.primaryFixedDim, label: t('progress.neutral') },
+                { color: colors.secondary, label: t('progress.tense') },
               ].map((l) => (
                 <View key={l.label} style={styles.legendItem}>
                   <View style={[styles.legendDot, { backgroundColor: l.color }]} />
@@ -125,7 +128,7 @@ export default function Progress() {
           <View style={styles.chartEmpty}>
             <Ionicons name="analytics-outline" size={36} color={colors.outlineVariant} />
             <Text style={[type.bodyMd, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
-              Enregistrez votre humeur chaque jour pour voir votre courbe apparaître ici.
+              {t('progress.noData')}
             </Text>
           </View>
         )}
@@ -138,48 +141,67 @@ export default function Progress() {
         </View>
         <Text style={[type.bodyMd, { color: colors.secondary, flex: 1, lineHeight: 22 }]}>
           {data && anxietyDelta < 0
-            ? `Votre anxiété a baissé de ${Math.abs(anxietyDelta)} % cette semaine. Continuez — vous progressez vraiment.`
+            ? t('progress.anxietyDown', { pct: String(Math.abs(anxietyDelta)) })
             : data && anxietyDelta > 0
-            ? `Semaine plus intense (+${anxietyDelta} %). Une petite session aujourd'hui peut faire la différence.`
-            : 'Enregistrez votre humeur chaque jour pour suivre vos tendances et constater vos progrès.'}
+            ? t('progress.anxietyUp', { pct: String(anxietyDelta) })
+            : t('progress.noData')}
         </Text>
       </Card>
 
-      {/* Empty-state encouragement */}
+      {/* Weekly report link */}
+      {data && (
+        <Pressable onPress={() => router.push('/weekly-report')} accessibilityRole="button" accessibilityLabel="Voir le rapport hebdomadaire">
+          <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <View style={[styles.insightIcon, { backgroundColor: colors.primaryFixed }]}>
+              <Ionicons name="bar-chart" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[type.titleMd, { color: colors.primary }]}>{t('progress.reportLink')}</Text>
+              <Text style={[type.bodyMd, { color: colors.onSurfaceVariant }]}>{t('progress.reportSub')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.outline} />
+          </Card>
+        </Pressable>
+      )}
+
+      {/* More insights */}
+      <View style={{ gap: 10 }}>
+        <Text style={[type.labelSm, { color: colors.outline }]}>{t('progress.explore')}</Text>
+        {[
+          { label: t('progress.correlation'), icon: 'git-branch-outline', href: '/correlation' },
+          { label: t('progress.monthlyReport'), icon: 'calendar-outline', href: '/monthly-report' },
+          { label: t('progress.badges'), icon: 'medal-outline', href: '/badges' },
+          { label: t('progress.challenges'), icon: 'trophy-outline', href: '/challenges' },
+        ].map((item) => (
+          <Pressable
+            key={item.href}
+            onPress={() => router.push(item.href as any)}
+            accessibilityRole="button"
+            accessibilityLabel={item.label}
+          >
+            <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <View style={[styles.insightIcon, { backgroundColor: colors.primaryFixed }]}>
+                <Ionicons name={item.icon as any} size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[type.titleMd, { color: colors.primary }]}>{item.label}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.outline} />
+            </Card>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Empty-state */}
       {!data && (
         <View style={styles.emptyState}>
           <Ionicons name="leaf-outline" size={32} color={colors.outlineVariant} />
-          <Text style={[type.bodyMd, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
-            Votre tableau de bord apparaîtra ici après votre première session.{'\n'}
-            C'est le moment de commencer !
-          </Text>
+            <Text style={[type.bodyMd, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
+              {t('progress.empty')}
+            </Text>
         </View>
       )}
     </ScrollView>
-  );
-}
-
-function StatCard({
-  value,
-  label,
-  icon,
-  iconBg,
-  iconColor,
-}: {
-  value: string;
-  label: string;
-  icon: string;
-  iconBg: string;
-  iconColor: string;
-}) {
-  return (
-    <Card style={{ flex: 1, alignItems: 'center', paddingVertical: 16, gap: 8 }}>
-      <View style={[styles.statIcon, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon as any} size={20} color={iconColor} />
-      </View>
-      <Text style={[type.displayLg, { color: colors.primary, fontSize: 26 }]}>{value}</Text>
-      <Text style={[type.labelSm, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>{label}</Text>
-    </Card>
   );
 }
 
@@ -220,7 +242,6 @@ const styles = StyleSheet.create({
     width: '80%',
     height: 4,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceContainerHigh,
     alignSelf: 'center',
   },
   legend: {

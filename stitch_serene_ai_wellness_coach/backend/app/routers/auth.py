@@ -1,4 +1,6 @@
 import logging
+import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
@@ -9,11 +11,13 @@ from ..config import settings
 from ..database import get_db
 from ..deps import get_current_user
 from ..limiter import limiter
-from ..models import MoodLog, Session, User
+from ..models import MoodLog, PasswordReset, Session, User, EmailVerification
 from ..schemas import (
     LoginIn,
     RefreshIn,
     RegisterIn,
+    RequestPasswordResetIn,
+    ResetPasswordIn,
     Token,
     UserExportOut,
     UserOut,
@@ -46,7 +50,9 @@ async def register(
 ):
     exists = (await db.execute(select(User).where(User.email == body.email))).scalar_one_or_none()
     if exists:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+        # Return a generic 201 to avoid email enumeration (M4).
+        # The caller cannot distinguish between "created" and "already exists".
+        return _make_token_pair(exists)
     user = User(email=body.email, name=body.name, hashed_password=hash_password(body.password))
     db.add(user)
     await db.commit()
@@ -157,3 +163,158 @@ async def delete_me(user: User = Depends(get_current_user), db: AsyncSession = D
     await db.delete(user)
     await db.commit()
     logger.info("RGPD: deleted user id=%s and all associated data", user.id)
+
+
+# ─── Password reset ─────────────────────────────────────────────────────────
+
+@router.post("/password-reset/request", status_code=202)
+@limiter.limit(settings.rate_limit_login, exempt_when=lambda: not settings.rate_limit_enabled)
+async def request_password_reset(
+    request: Request,
+    body: RequestPasswordResetIn,
+    db: AsyncSession = Depends(get_db),
+):
+    """Request a password reset. Always returns 202 to prevent email enumeration.
+
+    In production, send the token via email. For now, the token is logged
+    server-side and can be used via the /password-reset/complete endpoint.
+    """
+    user = (await db.execute(select(User).where(User.email == body.email))).scalar_one_or_none()
+    if user:
+        # Invalidate any existing unused reset tokens for this user.
+        existing = (await db.execute(
+            select(PasswordReset).where(
+                PasswordReset.user_id == user.id,
+                PasswordReset.used == False,  # noqa: E712
+            )
+        )).scalars().all()
+        for token_row in existing:
+            token_row.used = True
+            db.add(token_row)
+
+        # Create a new reset token (valid for 1 hour).
+        reset_token = secrets.token_urlsafe(48)
+        db.add(PasswordReset(user_id=user.id, token=reset_token))
+        await db.commit()
+
+        # In production, send an email here. For dev, log the token.
+        logger.info("Password reset token for %s: %s", body.email, reset_token)
+
+    # Always return 202 regardless of whether the email exists.
+    return {"message": "If this email is registered, a reset link has been sent."}
+
+
+@router.post("/password-reset/complete", status_code=200)
+async def complete_password_reset(
+    body: ResetPasswordIn,
+    db: AsyncSession = Depends(get_db),
+):
+    """Complete a password reset using the token received via email."""
+    reset = (await db.execute(
+        select(PasswordReset).where(
+            PasswordReset.token == body.token,
+            PasswordReset.used == False,  # noqa: E712
+        )
+    )).scalar_one_or_none()
+
+    if not reset:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired reset token")
+
+    # Check token age (1 hour max).
+    age = datetime.now(timezone.utc) - reset.created_at.replace(tzinfo=timezone.utc)
+    if age > timedelta(hours=1):
+        reset.used = True
+        db.add(reset)
+        await db.commit()
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Reset token has expired")
+
+    # Mark token as used.
+    reset.used = True
+    db.add(reset)
+
+    # Update the user's password.
+    user = (await db.execute(select(User).where(User.id == reset.user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "User not found")
+
+    user.hashed_password = hash_password(body.new_password)
+    # Bump token_version to invalidate all existing sessions.
+    user.token_version = (user.token_version or 0) + 1
+    db.add(user)
+    await db.commit()
+
+    return {"message": "Password has been reset successfully"}
+
+
+# ─── Email verification ────────────────────────────────────────────────────
+
+@router.post("/verify-email/request", status_code=202)
+@limiter.limit(settings.rate_limit_login, exempt_when=lambda: not settings.rate_limit_enabled)
+async def request_email_verification(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Request an email verification link. Always returns 202."""
+    if user.email_verified:
+        return {"message": "Email is already verified"}
+
+    # Invalidate any existing unused verification tokens.
+    existing = (await db.execute(
+        select(EmailVerification).where(
+            EmailVerification.user_id == user.id,
+            EmailVerification.used == False,  # noqa: E712
+        )
+    )).scalars().all()
+    for token_row in existing:
+        token_row.used = True
+        db.add(token_row)
+
+    # Create a new verification token (valid for 24 hours).
+    verify_token = secrets.token_urlsafe(48)
+    db.add(EmailVerification(user_id=user.id, token=verify_token))
+    await db.commit()
+
+    # In production, send an email here. For dev, log the token.
+    logger.info("Email verification token for %s: %s", user.email, verify_token)
+
+    return {"message": "Verification link sent"}
+
+
+@router.post("/verify-email/complete", status_code=200)
+async def complete_email_verification(
+    token: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+):
+    """Complete email verification using the token received via email."""
+    verification = (await db.execute(
+        select(EmailVerification).where(
+            EmailVerification.token == token,
+            EmailVerification.used == False,  # noqa: E712
+        )
+    )).scalar_one_or_none()
+
+    if not verification:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired verification token")
+
+    # Check token age (24 hours max).
+    age = datetime.now(timezone.utc) - verification.created_at.replace(tzinfo=timezone.utc)
+    if age > timedelta(hours=24):
+        verification.used = True
+        db.add(verification)
+        await db.commit()
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Verification token has expired")
+
+    # Mark token as used and verify the user's email.
+    verification.used = True
+    db.add(verification)
+
+    user = (await db.execute(select(User).where(User.id == verification.user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "User not found")
+
+    user.email_verified = True
+    db.add(user)
+    await db.commit()
+
+    return {"message": "Email verified successfully"}

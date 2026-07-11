@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { api, loadToken, setToken, User } from './api';
+import { api, loadToken, setToken, setRefreshToken, loadRefreshToken, User } from './api';
 import { syncPushToken } from './push';
 
 type AuthState = {
@@ -36,19 +36,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { access_token } = await api.login(email, password);
+    const { access_token, refresh_token } = await api.login(email, password);
     await setToken(access_token);
+    if (refresh_token) await setRefreshToken(refresh_token);
     await refresh();
   };
 
   const signUp = async (email: string, password: string, name: string) => {
-    const { access_token } = await api.register(email, password, name);
+    const { access_token, refresh_token } = await api.register(email, password, name);
     await setToken(access_token);
+    if (refresh_token) await setRefreshToken(refresh_token);
     await refresh();
   };
 
   const signOut = async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Best-effort: proceed with local sign-out even if the backend call fails
+    }
     await setToken(null);
+    await setRefreshToken(null);
     setUser(null);
   };
 

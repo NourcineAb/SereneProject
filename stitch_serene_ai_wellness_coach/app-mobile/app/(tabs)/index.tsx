@@ -6,13 +6,30 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../lib/auth';
 import { api, Progress } from '../../lib/api';
+import { useI18n } from '../../lib/i18n';
 import { Card } from '../../components/ui';
 import { AdBanner } from '../../components/AdBanner';
-import { colors, FREE_SESSION_LIMIT, MOODS, radius, softGlow, spacing, type } from '../../theme/serene';
+import { useColors, useType } from '../../lib/theme-provider';
+import { FREE_SESSION_LIMIT, MOODS, radius, softGlow, spacing } from '../../theme/serene';
 import { ONBOARDING_NAME_KEY } from '../onboarding';
+
+const TOOLS: { key: string; label: string; icon: any; href: string }[] = [
+  { key: 'breathing', label: 'Respiration', icon: 'fitness', href: '/breathing' },
+  { key: 'meditation', label: 'Méditation', icon: 'flower', href: '/meditation' },
+  { key: 'ambient', label: 'Ambiance', icon: 'radio', href: '/ambient' },
+  { key: 'exercises', label: 'Exercices', icon: 'barbell', href: '/exercises' },
+  { key: 'journal', label: 'Journal', icon: 'book', href: '/journal' },
+  { key: 'calendar', label: 'Calendrier', icon: 'calendar', href: '/calendar' },
+  { key: 'pmr', label: 'Relaxation', icon: 'body-outline', href: '/pmr' },
+  { key: 'grounding', label: 'Ancrage 5-4-3-2-1', icon: 'earth', href: '/grounding' },
+  { key: 'reframing', label: 'Reformulation', icon: 'bulb', href: '/reframing' },
+];
 
 export default function Home() {
   const { user } = useAuth();
+  const { t } = useI18n();
+  const colors = useColors();
+  const type = useType();
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<number | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -76,9 +93,9 @@ export default function Home() {
         {/* Greeting */}
         <View style={{ gap: 4 }}>
           <Text style={[type.titleMd, { color: colors.secondary }]}>
-            Bonjour, {displayName}
+            {t('home.greeting', { name: displayName })}
           </Text>
-          <Text style={[type.headlineLg, { color: colors.primary }]}>Comment vous sentez-vous ?</Text>
+          <Text style={[type.headlineLg, { color: colors.primary }]}>{t('mood.question')}</Text>
         </View>
 
         {/* Mood selector */}
@@ -104,18 +121,18 @@ export default function Home() {
           ))}
         </View>
 
-        {/* Sessions-left nudge — visible when 1 or 0 sessions remain for free users */}
+        {/* Sessions-left nudge */}
         {showUpgradeNudge && (
           <Pressable
             onPress={() => router.push('/paywall')}
-            style={styles.nudge}
+            style={[styles.nudge, { backgroundColor: colors.primaryFixed, borderColor: colors.primary }]}
             accessibilityRole="button"
             accessibilityLabel={`Il vous reste ${sessionsLeft} session gratuite. Passer à Pro`}
           >
             <Ionicons name="star-outline" size={18} color={colors.primary} />
             <Text style={[type.bodyMd, { color: colors.primary, flex: 1 }]}>
               {sessionsLeft === 0
-                ? 'Votre quota gratuit est atteint. Passez à Pro pour continuer.'
+                ? t('chat.premiumRequired')
                 : 'Il vous reste 1 session gratuite cette semaine. Découvrez Pro →'}
             </Text>
           </Pressable>
@@ -124,21 +141,21 @@ export default function Home() {
         {/* Big CTA → chat */}
         <View style={{ alignItems: 'center', paddingVertical: 8 }}>
           <Pressable
-            style={({ pressed }) => [styles.cta, softGlow, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+            style={({ pressed }) => [styles.cta, softGlow, { backgroundColor: colors.primary, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
             onPress={() => router.push('/(tabs)/chat')}
             accessibilityLabel="Commencer une session"
             accessibilityRole="button"
           >
             <Ionicons name="play" size={34} color={colors.onPrimary} />
             <Text style={[type.titleMd, { color: colors.onPrimary, textAlign: 'center' }]}>
-              Commencer{'\n'}une session
+              {t('home.cta')}
             </Text>
           </Pressable>
         </View>
 
         {/* Stats */}
         <View style={{ gap: spacing.gutter }}>
-          {/* Streak card with celebration tap */}
+          {/* Streak card */}
           <Pressable onPress={celebrateStreak} accessibilityRole="none">
             <Card style={styles.statCard}>
               <View style={[styles.iconBubble, { backgroundColor: colors.secondaryContainer }]}>
@@ -147,18 +164,18 @@ export default function Home() {
                 </Animated.View>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>SÉRIE ACTUELLE</Text>
+                <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>{t('home.streak')}</Text>
                 <Text style={[type.titleMd, { color: colors.primary }]}>
-                  {progress?.streak_days ?? 0} jour{(progress?.streak_days ?? 0) !== 1 ? 's' : ''} consécutif{(progress?.streak_days ?? 0) !== 1 ? 's' : ''}
+                  {t('home.streakDays', { count: String(progress?.streak_days ?? 0) })}
                 </Text>
                 {celebratingStreak && (
                   <Text style={[type.labelSm, { color: colors.primary, marginTop: 2 }]}>
-                    Continuez comme ça !
+                    {t('home.streakMsg')}
                   </Text>
                 )}
                 {!progress && (
                   <Text style={[type.bodyMd, { color: colors.onSurfaceVariant, fontSize: 13 }]}>
-                    Commencez votre première session pour démarrer votre série.
+                    {t('home.streakEmpty')}
                   </Text>
                 )}
               </View>
@@ -171,16 +188,16 @@ export default function Home() {
               <Ionicons name="calendar" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>OBJECTIF HEBDO</Text>
+              <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>{t('home.weeklyGoal')}</Text>
               <Text style={[type.titleMd, { color: colors.primary }]}>
-                {progress?.sessions_this_week ?? 0}/{progress?.sessions_limit ?? FREE_SESSION_LIMIT} sessions
+                {t('home.sessions', { current: String(progress?.sessions_this_week ?? 0), limit: String(progress?.sessions_limit ?? FREE_SESSION_LIMIT) })}
               </Text>
-              <View style={styles.bar}>
-                <View style={[styles.barFill, { width: `${weeklyPct * 100}%` }]} />
+              <View style={[styles.bar, { backgroundColor: colors.surfaceContainer }]}>
+                <View style={[styles.barFill, { width: `${weeklyPct * 100}%`, backgroundColor: colors.primary }]} />
               </View>
               {!isPremium && sessionsLeft !== null && sessionsLeft > 1 && (
                 <Text style={[type.labelSm, { color: colors.outline, marginTop: 4 }]}>
-                  {sessionsLeft} session{sessionsLeft > 1 ? 's' : ''} gratuite{sessionsLeft > 1 ? 's' : ''} restante{sessionsLeft > 1 ? 's' : ''}
+                  {t('home.sessionsLeft', { count: String(sessionsLeft) })}
                 </Text>
               )}
             </View>
@@ -198,19 +215,42 @@ export default function Home() {
               <Ionicons name="fitness" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[type.titleMd, { color: colors.onSurface }]}>Respiration au carré</Text>
-              <Text style={[type.bodyMd, { color: colors.onSurfaceVariant }]}>2 min · apaise l'anxiété</Text>
+              <Text style={[type.titleMd, { color: colors.onSurface }]}>{t('home.breathing')}</Text>
+              <Text style={[type.bodyMd, { color: colors.onSurfaceVariant }]}>{t('home.breathingSub')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={22} color={colors.outline} />
           </Card>
         </Pressable>
 
-        {/* Empty-state encouragement when no progress yet */}
+        {/* Tools & library */}
+        <View style={{ gap: spacing.gutter }}>
+          <Text style={[type.labelSm, { color: colors.outline }]}>Outils & exercices</Text>
+          <View style={styles.toolsGrid}>
+            {TOOLS.map((tool) => (
+              <Pressable
+                key={tool.key}
+                onPress={() => router.push(tool.href as any)}
+                accessibilityLabel={tool.label}
+                accessibilityRole="button"
+                style={[styles.toolCard, { backgroundColor: colors.surfaceContainerLow }]}
+              >
+                <View style={[styles.toolIcon, { backgroundColor: colors.primaryFixed }]}>
+                  <Ionicons name={tool.icon} size={22} color={colors.primary} />
+                </View>
+                <Text style={[type.labelSm, { color: colors.onSurface, textAlign: 'center' }]}>
+                  {tool.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Empty-state */}
         {!progress && (
           <View style={styles.emptyState}>
             <Ionicons name="leaf-outline" size={32} color={colors.outlineVariant} />
             <Text style={[type.bodyMd, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
-              Votre parcours commence ici.{'\n'}Commencez une session ou choisissez votre humeur pour suivre vos progrès.
+              {t('home.empty')}
             </Text>
           </View>
         )}
@@ -231,7 +271,6 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceContainerLowest,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -239,17 +278,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: colors.primaryFixed,
     borderRadius: radius.base,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.primary,
   },
   cta: {
     width: 190,
     height: 190,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
@@ -258,16 +294,30 @@ const styles = StyleSheet.create({
   iconBubble: { width: 48, height: 48, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   bar: {
     height: 6,
-    backgroundColor: colors.surfaceContainer,
     borderRadius: radius.full,
     marginTop: 8,
     overflow: 'hidden',
   },
-  barFill: { height: 6, backgroundColor: colors.primary, borderRadius: radius.full },
+  barFill: { height: 6, borderRadius: radius.full },
   emptyState: {
     alignItems: 'center',
     gap: 12,
     paddingVertical: spacing.gutter,
     paddingHorizontal: spacing.containerMobile,
+  },
+  toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12 },
+  toolCard: {
+    width: '31%',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: radius.lg,
+  },
+  toolIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

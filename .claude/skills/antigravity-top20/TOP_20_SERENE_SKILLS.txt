@@ -1,0 +1,22 @@
+TOP 20 SKILLS FOR SERENE PROJECT
+================================================================================
+
+python-fastapi-development
+react-best-practices
+typescript-expert
+security-audit
+tdd-workflow
+security-and-hardening
+postgresql-optimization
+test-driven-development
+test-automator
+performance-optimization
+python-testing-patterns
+fastapi-pro
+api-security-testing
+react-native-skills
+expo-deployment
+postgres-best-practices
+prisma-expert
+llm-application-dev-langchain-agent
+web-performance-optimization

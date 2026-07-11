@@ -4,9 +4,11 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth';
+import { useI18n } from '../lib/i18n';
+import { useColors, useType } from '../lib/theme-provider';
 import { adsEnabled, showInterstitial } from '../lib/ads';
 import { PillButton } from '../components/ui';
-import { colors, radius, softGlow, spacing, type } from '../theme/serene';
+import { radius, softGlow, spacing } from '../theme/serene';
 
 const PHASES = [
   { label: 'Inspirer', seconds: 4, scale: 1.25 },
@@ -25,7 +27,10 @@ const PHASE_ICONS: Record<string, string> = {
 
 export default function Breathing() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const { user } = useAuth();
+  const colors = useColors();
+  const type = useType();
   const [phase, setPhase] = useState(0);
   const [count, setCount] = useState(4);
   const [round, setRound] = useState(1);
@@ -41,7 +46,6 @@ export default function Breathing() {
     router.back();
   };
 
-  // Trigger "round complete" celebration when all rounds done
   useEffect(() => {
     if (completed) {
       Animated.parallel([
@@ -87,7 +91,7 @@ export default function Breathing() {
 
   if (completed) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 16 }]}>
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom + 16 }]}>
         <Animated.View
           style={[
             styles.completedBox,
@@ -99,7 +103,7 @@ export default function Breathing() {
           accessibilityLiveRegion="polite"
           accessibilityLabel="Exercice terminé. Bravo !"
         >
-          <View style={styles.completedIcon}>
+          <View style={[styles.completedIcon, { backgroundColor: colors.primary }]}>
             <Ionicons name="checkmark-circle" size={56} color={colors.onPrimary} />
           </View>
           <Text style={[type.displayLg, { color: colors.primary, textAlign: 'center', fontSize: 28 }]}>
@@ -114,7 +118,7 @@ export default function Breathing() {
         </Animated.View>
         <View style={{ padding: spacing.containerMobile, gap: 12 }}>
           <PillButton
-            label="Retourner à l'accueil"
+            label={t('exercise.backHome')}
             onPress={() => void stopExercise()}
             accessibilityLabel="Terminer et retourner à l'accueil"
           />
@@ -124,7 +128,7 @@ export default function Breathing() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Ionicons name="leaf" size={24} color={colors.primary} />
@@ -132,7 +136,7 @@ export default function Breathing() {
         </View>
         <Pressable
           onPress={() => void stopExercise()}
-          style={styles.close}
+          style={[styles.close, { backgroundColor: colors.surfaceContainerHigh }]}
           accessibilityLabel="Arrêter l'exercice"
           accessibilityRole="button"
         >
@@ -146,14 +150,13 @@ export default function Breathing() {
           Trouvez votre équilibre intérieur
         </Text>
 
-        {/* Breathing orb */}
         <View
           style={styles.orbWrap}
           accessibilityLiveRegion="polite"
           accessibilityLabel={`${PHASES[phase].label}, ${count} secondes`}
         >
-          <Animated.View style={[styles.glow, { transform: [{ scale }] }]} />
-          <Animated.View style={[styles.orb, { transform: [{ scale }] }]}>
+          <Animated.View style={[styles.glow, { backgroundColor: colors.primary, transform: [{ scale }] }]} />
+          <Animated.View style={[styles.orb, { backgroundColor: colors.primary, transform: [{ scale }] }]}>
             <Text style={[type.displayLg, { color: colors.onPrimary, fontSize: 22 }]}>
               {PHASES[phase].label}
             </Text>
@@ -163,13 +166,13 @@ export default function Breathing() {
           </Animated.View>
         </View>
 
-        {/* Phase step indicators */}
         <View style={styles.steps}>
           {PHASES.map((p, i) => (
             <View key={i} style={{ alignItems: 'center', opacity: i === phase ? 1 : 0.4 }}>
               <View
                 style={[
                   styles.stepDot,
+                  { borderColor: colors.outlineVariant, backgroundColor: colors.surfaceContainerLowest },
                   i === phase && { backgroundColor: colors.primaryFixed, borderColor: colors.primary },
                 ]}
               >
@@ -184,13 +187,13 @@ export default function Breathing() {
           ))}
         </View>
 
-        {/* Round progress dots */}
         <View style={styles.roundDots}>
           {Array.from({ length: MAX_ROUNDS }).map((_, i) => (
             <View
               key={i}
               style={[
                 styles.roundDot,
+                { backgroundColor: colors.surfaceContainerHigh },
                 i < round - 1 && { backgroundColor: colors.primary },
                 i === round - 1 && { backgroundColor: colors.primaryFixedDim, borderColor: colors.primary, borderWidth: 2 },
               ]}
@@ -215,7 +218,7 @@ export default function Breathing() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -227,7 +230,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceContainerHigh,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -249,14 +251,12 @@ const styles = StyleSheet.create({
     width: 280,
     height: 280,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
     opacity: 0.1,
   },
   orb: {
     width: 220,
     height: 220,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
@@ -273,8 +273,6 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: radius.full,
     borderWidth: 2,
-    borderColor: colors.outlineVariant,
-    backgroundColor: colors.surfaceContainerLowest,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -288,7 +286,6 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceContainerHigh,
   },
   completedBox: {
     flex: 1,
@@ -301,7 +298,6 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,

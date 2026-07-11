@@ -86,6 +86,31 @@ class MoodOut(BaseModel):
         from_attributes = True
 
 
+# ─── Journal ──────────────────────────────────────────────────────────────
+class JournalEntryIn(BaseModel):
+    mood_score: int = Field(ge=1, le=10)
+    content: str
+    technique: str | None = None
+
+
+class JournalEntryOut(BaseModel):
+    id: int
+    mood_score: int
+    content: str
+    technique: str | None = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class WeeklySummaryOut(BaseModel):
+    total_entries: int
+    average_mood: float
+    most_used_technique: str | None = None
+    entries_by_day: dict[str, int]
+
+
 # ─── Progress / Dashboard ────────────────────────────────────────────────────
 class ProgressOut(BaseModel):
     streak_days: int
@@ -101,6 +126,45 @@ class SessionOut(BaseModel):
     id: int
     title: str
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ─── Password reset ────────────────────────────────────────────────────────
+class RequestPasswordResetIn(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordIn(BaseModel):
+    token: str
+    new_password: str = Field(min_length=6)
+
+
+# ─── Community / Challenges ──────────────────────────────────────────────
+class ChallengeOut(BaseModel):
+    id: int
+    title: str
+    description: str
+    duration_days: int
+    target_sessions: int
+    target_streak: int
+    created_at: datetime
+    participant_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class UserChallengeOut(BaseModel):
+    id: int
+    challenge_id: int
+    started_at: datetime
+    completed: bool
+    completed_at: datetime | None = None
+    current_sessions: int = 0
+    current_streak: int = 0
+    challenge: ChallengeOut | None = None
 
     class Config:
         from_attributes = True

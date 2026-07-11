@@ -25,13 +25,14 @@ async def test_register_login_me(client: AsyncClient):
     assert data["is_premium"] is False
 
 
-async def test_register_duplicate_email_409(client: AsyncClient):
+async def test_register_duplicate_email_returns_201(client: AsyncClient):
+    """Duplicate email returns 201 (not 409) to prevent email enumeration (M4)."""
     await register_and_login(client)
     r = await client.post(
         "/auth/register",
         json={"email": "alice@test.com", "password": "another123"},
     )
-    assert r.status_code == 409
+    assert r.status_code == 201
 
 
 async def test_login_bad_credentials_401(client: AsyncClient):

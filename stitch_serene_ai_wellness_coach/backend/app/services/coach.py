@@ -13,7 +13,8 @@ from ..prompts import (
     detect_crisis,
     extract_technique,
 )
-from . import llm, progress
+from . import llm, progress, push
+from .moderation import moderate_message
 
 HISTORY_LIMIT = 20  # messages of context sent to the model
 
@@ -34,6 +35,23 @@ async def handle_chat(
     used = await progress.sessions_this_week(db, user.id)
     limit = settings.free_sessions_per_week
     starting_new = session_id is None
+
+    # ── Content moderation — reject harmful messages before processing.
+    mod_result = moderate_message(message)
+    if not mod_result.allowed:
+        return {
+            "session_id": 0,
+            "reply": (
+                "Je comprends que vous puissiez ressentir des émotions fortes. "
+                "Cependant, je ne peux pas traiter ce type de message. "
+                "Si vous traversez une difficile, n'hésitez pas à contacter "
+                "un professionnel : 3114 (FR) · 988 (US)."
+            ),
+            "technique": None,
+            "paywall": False,
+            "sessions_used": used,
+            "sessions_limit": limit,
+        }
 
     # ── Freemium gate: block only the *start* of a new session past the limit.
     # Never block continuing an existing conversation (and crisis always passes).
@@ -88,9 +106,10 @@ async def handle_chat(
         }
 
     # ── Build the dynamic system prompt from the live user profile.
+    streak_days = await progress.current_streak(db, user.id)
     system = build_system_prompt(
         user_name=user.name,
-        streak_days=await progress.current_streak(db, user.id),
+        streak_days=streak_days,
         last_mood=await progress.last_mood_score(db, user.id),
         sessions_count=used,
         free_limit=limit,
@@ -104,6 +123,11 @@ async def handle_chat(
 
     db.add(Message(session_id=session.id, role="assistant", content=reply, technique=technique))
     await db.commit()
+
+    # ── Fire-and-forget: send streak milestone push notification.
+    if streak_days > 0:
+        import asyncio
+        asyncio.create_task(push.send_streak_milestone(db, user, streak_days))
 
     return {
         "session_id": session.id,

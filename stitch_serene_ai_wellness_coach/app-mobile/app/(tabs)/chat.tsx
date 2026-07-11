@@ -15,25 +15,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
+import { useI18n } from '../../lib/i18n';
+import { useColors, useType } from '../../lib/theme-provider';
 import { AdBanner } from '../../components/AdBanner';
-import { colors, radius, softGlow, spacing, type } from '../../theme/serene';
+import { radius, softGlow, spacing } from '../../theme/serene';
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string; technique?: string | null };
-
-const WELCOME: Msg = { id: 'welcome', role: 'assistant', content: "Bonjour ! Qu'est-ce qui vous pèse aujourd'hui ?" };
-
-const SUGGESTIONS = ['Le travail me submerge', "Je n'arrive pas à dormir", 'Je me sens anxieux'];
 
 export default function Chat() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { t } = useI18n();
+  const colors = useColors();
+  const type = useType();
+  const WELCOME: Msg = { id: 'welcome', role: 'assistant', content: t('chat.welcome') };
+  const SUGGESTIONS = [t('chat.workStress'), t('chat.sleep'), t('chat.anxious')];
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [sessionId, setSessionId] = useState<number | undefined>();
   const listRef = useRef<FlatList>(null);
 
-  // Hydrate the most recent session on mount (offline-tolerant)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -53,7 +55,7 @@ export default function Chat() {
         setSessionId(latest.id);
         setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 80);
       } catch {
-        // Offline or backend unavailable — keep the welcome message, no crash
+        // Offline or backend unavailable
       }
     })();
     return () => { cancelled = true; };
@@ -97,20 +99,22 @@ export default function Chat() {
           style={[
             styles.bubble,
             softGlow,
-            isUser ? styles.userBubble : styles.aiBubble,
+            isUser
+              ? { backgroundColor: colors.primary, borderBottomRightRadius: 4 }
+              : { backgroundColor: colors.surfaceContainerLowest, borderWidth: 1, borderColor: colors.surfaceVariant, borderBottomLeftRadius: 4 },
           ]}
         >
           <Text style={[type.bodyMd, { color: isUser ? colors.onPrimary : colors.primary }]}>{item.content}</Text>
         </View>
         {item.technique === 'box_breathing' && (
           <Pressable
-            style={styles.techniqueChip}
+            style={[styles.techniqueChip, { backgroundColor: colors.surfaceContainerLow, borderColor: colors.outlineVariant }]}
             onPress={() => router.push('/breathing')}
             accessibilityLabel="Faire l'exercice de respiration guidé"
             accessibilityRole="button"
           >
             <Ionicons name="fitness" size={16} color={colors.primary} />
-            <Text style={[type.labelSm, { color: colors.primary }]}>Faire l'exercice guidé</Text>
+            <Text style={[type.labelSm, { color: colors.primary }]}>{t('chat.exercise')}</Text>
           </Pressable>
         )}
       </View>
@@ -128,10 +132,10 @@ export default function Chat() {
           style={[type.labelSm, { color: colors.outline, textAlign: 'center' }]}
           accessibilityRole="header"
         >
-          AUJOURD'HUI
+          {t('chat.today')}
         </Text>
         <Text style={[type.titleMd, { color: colors.secondary, textAlign: 'center' }]}>
-          Votre session de calme avec Serene
+          {t('chat.sessionTitle')}
         </Text>
       </View>
 
@@ -143,13 +147,17 @@ export default function Chat() {
         contentContainerStyle={{ padding: spacing.containerMobile, paddingBottom: 8 }}
         ListFooterComponent={
           sending ? (
-            <View style={[styles.bubble, styles.aiBubble, { alignSelf: 'flex-start' }]}>
+            <View style={[styles.bubble, { backgroundColor: colors.surfaceContainerLowest, borderWidth: 1, borderColor: colors.surfaceVariant, borderBottomLeftRadius: 4, alignSelf: 'flex-start' }]}>
               <ActivityIndicator color={colors.primary} />
             </View>
           ) : messages.length === 1 && messages[0].id === 'welcome' ? (
             <View style={styles.chips}>
               {SUGGESTIONS.map((s) => (
-                <Pressable key={s} style={styles.chip} onPress={() => send(s)}>
+                <Pressable
+                  key={s}
+                  style={[styles.chip, { backgroundColor: colors.surfaceContainerLow, borderColor: colors.outlineVariant }]}
+                  onPress={() => send(s)}
+                >
                   <Text style={[type.labelSm, { color: colors.secondary }]}>{s}</Text>
                 </Pressable>
               ))}
@@ -158,13 +166,12 @@ export default function Chat() {
         }
       />
 
-      {/* AdBanner above the input bar — hidden for premium users */}
       <AdBanner isPremium={!!user?.is_premium} />
 
-      <View style={[styles.inputBar, { marginBottom: insets.bottom + 8 }]}>
+      <View style={[styles.inputBar, { marginBottom: insets.bottom + 8, backgroundColor: colors.surfaceContainerLowest, borderColor: colors.surfaceVariant }]}>
         <TextInput
-          style={styles.input}
-          placeholder="Dites-moi tout..."
+          style={[styles.input, { color: colors.onSurface, fontFamily: type.bodyMd.fontFamily }]}
+          placeholder={t('chat.placeholder')}
           placeholderTextColor={colors.outline}
           value={input}
           onChangeText={setInput}
@@ -172,7 +179,7 @@ export default function Chat() {
           returnKeyType="send"
         />
         <Pressable
-          style={styles.sendBtn}
+          style={[styles.sendBtn, { backgroundColor: colors.primary }]}
           onPress={() => send(input)}
           accessibilityLabel="Envoyer le message"
           accessibilityRole="button"
@@ -186,54 +193,40 @@ export default function Chat() {
 
 const styles = StyleSheet.create({
   bubble: { maxWidth: '85%', padding: 16, borderRadius: 20 },
-  aiBubble: {
-    backgroundColor: colors.surfaceContainerLowest,
-    borderWidth: 1,
-    borderColor: colors.surfaceVariant,
-    borderBottomLeftRadius: 4,
-  },
-  userBubble: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   techniqueChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginTop: 8,
-    backgroundColor: colors.surfaceContainerLow,
     borderRadius: radius.full,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: colors.outlineVariant,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 16 },
   chip: {
-    backgroundColor: colors.surfaceContainerLow,
     borderRadius: radius.base,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: colors.outlineVariant,
   },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginHorizontal: spacing.containerMobile,
-    backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: colors.surfaceVariant,
     borderRadius: radius.full,
     paddingLeft: 20,
     paddingRight: 6,
     paddingVertical: 6,
     ...softGlow,
   },
-  input: { flex: 1, color: colors.onSurface, fontFamily: type.bodyMd.fontFamily, fontSize: 16, paddingVertical: 8 },
+  input: { flex: 1, fontSize: 16, paddingVertical: 8 },
   sendBtn: {
     width: 44,
     height: 44,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

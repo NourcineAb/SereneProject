@@ -3,10 +3,11 @@ import { Redirect } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../lib/auth';
-import { colors } from '../theme/serene';
+import { useColors } from '../lib/theme-provider';
 import { ONBOARDING_DONE_KEY } from './onboarding';
 
 export default function Index() {
+  const colors = useColors();
   const { user, loading } = useAuth();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);

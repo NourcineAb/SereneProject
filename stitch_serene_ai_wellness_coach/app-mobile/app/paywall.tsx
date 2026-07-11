@@ -1,24 +1,14 @@
-/**
- * Paywall — high-conversion Serene Pro upgrade screen.
- *
- * Design decisions:
- * - Opens as a bottom-sheet-style modal (full-screen on Android, native modal on iOS).
- * - Leads with outcome/emotion ("stress du quotidien") before listing features.
- * - Social-proof stat ("rejoignez 10 000+ utilisateurs").
- * - Clear "7-day free trial" CTA with legal copy beneath.
- * - Crisis safety: never shown mid-crisis (the chat screen gates it only after
- *   a successful exchange, not when paywall:true fires with a crisis keyword).
- */
 import { useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth';
+import { useColors, useType } from '../lib/theme-provider';
 import { purchaseSerenePro } from '../lib/purchases';
 import { MONETIZATION } from '../lib/ads';
 import { PillButton } from '../components/ui';
-import { colors, radius, softGlow, spacing, type } from '../theme/serene';
+import { radius, softGlow, spacing } from '../theme/serene';
 
 const ADS_MODE = MONETIZATION === 'ads' || MONETIZATION === 'both';
 
@@ -40,6 +30,8 @@ const PERKS: Perk[] = ADS_MODE
 export default function Paywall() {
   const insets = useSafeAreaInsets();
   const { refresh } = useAuth();
+  const colors = useColors();
+  const type = useType();
   const [busy, setBusy] = useState(false);
   const btnScale = useRef(new Animated.Value(1)).current;
 
@@ -63,11 +55,10 @@ export default function Paywall() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      {/* Close */}
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <Pressable
         onPress={() => router.back()}
-        style={styles.close}
+        style={[styles.close, { backgroundColor: colors.surfaceContainerHigh }]}
         accessibilityLabel="Fermer"
         accessibilityRole="button"
       >
@@ -79,9 +70,8 @@ export default function Paywall() {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* Hero */}
         <View style={{ alignItems: 'center', gap: 10 }}>
-          <View style={styles.badge}>
+          <View style={[styles.badge, { backgroundColor: colors.primary }]}>
             <Ionicons name="sparkles" size={34} color={colors.onPrimary} />
           </View>
           <Text style={[type.displayLg, { color: colors.primary, textAlign: 'center', fontSize: 28 }]}>
@@ -92,8 +82,7 @@ export default function Paywall() {
               ? 'Profitez de Serene sans interruption, en toute profondeur.'
               : 'Devenez la meilleure version de vous-même, un jour à la fois.'}
           </Text>
-          {/* Social proof */}
-          <View style={styles.socialProof}>
+          <View style={[styles.socialProof, { backgroundColor: colors.secondaryContainer }]}>
             <Ionicons name="people" size={16} color={colors.secondary} />
             <Text style={[type.labelSm, { color: colors.secondary }]}>
               Rejoignez 10 000+ utilisateurs qui gèrent leur stress au quotidien
@@ -101,8 +90,7 @@ export default function Paywall() {
           </View>
         </View>
 
-        {/* Price */}
-        <View style={[styles.priceBox, softGlow]}>
+        <View style={[styles.priceBox, { backgroundColor: colors.primaryContainer }, softGlow]}>
           <View style={{ alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
               <Text style={[type.displayLg, { color: colors.onPrimary, fontSize: 40 }]}>4,99 €</Text>
@@ -114,11 +102,10 @@ export default function Paywall() {
           </View>
         </View>
 
-        {/* Perks */}
         <View style={{ gap: 14, marginTop: 4 }}>
           {PERKS.map((p) => (
-            <View key={p.title} style={styles.perk}>
-              <View style={styles.perkIcon}>
+            <View key={p.title} style={[styles.perk, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.outlineVariant }]}>
+              <View style={[styles.perkIcon, { backgroundColor: colors.primaryFixed }]}>
                 <Ionicons name={p.icon as any} size={22} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
@@ -129,7 +116,6 @@ export default function Paywall() {
           ))}
         </View>
 
-        {/* CTA */}
         <View style={{ gap: 10, marginTop: spacing.section }}>
           <Animated.View style={{ transform: [{ scale: btnScale }] }}>
             <PillButton
@@ -145,8 +131,7 @@ export default function Paywall() {
           </Text>
         </View>
 
-        {/* Crisis safety footer */}
-        <View style={styles.crisis}>
+        <View style={[styles.crisis, { backgroundColor: colors.surfaceContainerLow }]}>
           <Ionicons name="heart" size={14} color={colors.secondary} />
           <Text style={[type.labelSm, { color: colors.secondary, flex: 1, lineHeight: 18 }]}>
             En cas de crise, Serene reste toujours disponible gratuitement. 3114 (FR) · 988 (US/Canada).
@@ -160,7 +145,6 @@ export default function Paywall() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   close: {
     alignSelf: 'flex-end',
@@ -168,7 +152,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceContainerHigh,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -181,7 +164,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -189,14 +171,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.secondaryContainer,
     borderRadius: radius.full,
     paddingHorizontal: 14,
     paddingVertical: 8,
     marginTop: 4,
   },
   priceBox: {
-    backgroundColor: colors.primaryContainer,
     borderRadius: radius.md,
     paddingVertical: 20,
     paddingHorizontal: 28,
@@ -207,17 +187,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: colors.surfaceContainerLowest,
     borderRadius: radius.base,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.outlineVariant,
   },
   perkIcon: {
     width: 44,
     height: 44,
     borderRadius: radius.full,
-    backgroundColor: colors.primaryFixed,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -225,7 +202,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: colors.surfaceContainerLow,
     borderRadius: radius.base,
     padding: 12,
     marginTop: 4,

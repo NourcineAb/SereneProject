@@ -1,6 +1,14 @@
 """The Serene coaching agent prompt — verbatim from product spec, with a
 dynamically injected user profile block."""
 
+ALLOWED_TECHNIQUES = frozenset({
+    "box_breathing",
+    "grounding_54321",
+    "cognitive_reframing",
+    "pmr",
+    "journaling",
+})
+
 SERENE_SYSTEM_PROMPT = """You are Serene, a compassionate AI stress and anxiety coach.
 Your approach is grounded in Cognitive Behavioral Therapy (CBT),
 mindfulness, and positive psychology.
@@ -96,12 +104,20 @@ def detect_crisis(text: str) -> bool:
 
 
 def extract_technique(reply: str) -> tuple[str, str | None]:
-    """Strip the [TECHNIQUE: x] tag from the reply, return (clean_reply, technique)."""
+    """Strip the [TECHNIQUE: x] tag from the reply, return (clean_reply, technique).
+
+    Validates the extracted technique against ALLOWED_TECHNIQUES (L4).
+    Unknown techniques are treated as None — never stored or surfaced to the client.
+    """
     import re
 
     m = re.search(r"\[TECHNIQUE:\s*([a-z_0-9]+)\]", reply, flags=re.IGNORECASE)
     if not m:
         return reply.strip(), None
     technique = m.group(1).lower()
+    if technique not in ALLOWED_TECHNIQUES:
+        # Unknown technique — strip the tag but don't return the technique.
+        clean = reply[: m.start()].rstrip()
+        return clean, None
     clean = reply[: m.start()].rstrip()
     return clean, technique

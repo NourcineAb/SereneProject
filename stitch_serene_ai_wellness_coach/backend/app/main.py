@@ -10,7 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from .config import settings
 from .database import init_db
 from .limiter import limiter
-from .routers import auth, billing, chat, integrations, mood, progress
+from .routers import auth, billing, chat, community, integrations, journal, mood, progress, report
 
 
 @asynccontextmanager
@@ -43,9 +43,12 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(mood.router)
+app.include_router(journal.router)
 app.include_router(progress.router)
 app.include_router(billing.router)
 app.include_router(integrations.router)
+app.include_router(report.router)
+app.include_router(community.router)
 
 
 @app.get("/health", tags=["meta"])

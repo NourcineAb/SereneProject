@@ -1,4 +1,4 @@
-"""Push notification token registration and RevenueCat webhook handler."""
+"""Push notification token registration, delivery, and RevenueCat webhook handler."""
 from __future__ import annotations
 
 import logging
@@ -12,6 +12,7 @@ from ..config import settings
 from ..database import get_db
 from ..deps import get_current_user
 from ..models import User
+from ..services import push
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,19 @@ async def register_push_token(
     db.add(user)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ─── Push delivery ───────────────────────────────────────────────────────────
+
+@router.post("/push/daily-checkin")
+async def trigger_daily_checkin(db: AsyncSession = Depends(get_db)) -> dict:
+    """Trigger daily check-in reminders for all eligible users.
+
+    This endpoint is meant to be called by a cron job (e.g. every day at 18:00).
+    In production, protect it with a shared secret or internal-only network rule.
+    """
+    sent = await push.send_daily_checkin_reminder(db)
+    return {"status": "ok", "sent": sent}
 
 
 # ─── RevenueCat webhook ──────────────────────────────────────────────────────
