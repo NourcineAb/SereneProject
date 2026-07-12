@@ -15,7 +15,7 @@ import { ScreenHeader } from '../components/ScreenHeader';
 import { useColors, useType } from '../lib/theme-provider';
 import { radius, softGlow, spacing } from '../theme/serene';
 
-type SoundId = 'rain' | 'ocean' | 'forest' | 'wind' | 'fire' | 'stream';
+type SoundId = 'rain' | 'ocean' | 'forest' | 'wind' | 'fire' | 'stream' | 's1' | 's2' | 's3';
 
 const SOUNDS: { id: SoundId; name: string; icon: string }[] = [
   { id: 'rain', name: 'Pluie', icon: 'rainy-outline' },
@@ -243,6 +243,157 @@ function createStream(ctx: AudioContext, vol: number): AmbientNodes {
   return { master, stop: () => { src.stop(); } };
 }
 
+// ── Sleep story soundscapes ─────────────────────────────────────────────────
+
+function createStoryLake(ctx: AudioContext, vol: number): AmbientNodes {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(ctx.destination);
+
+  const bufSize = 6 * ctx.sampleRate;
+  const buf = ctx.createBuffer(2, bufSize, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < bufSize; i++) {
+      const t = i / ctx.sampleRate;
+      const lapping = Math.sin(t * 0.2 * Math.PI * 2 + ch * 1.2) * 0.5 + 0.5;
+      const water = (Math.random() * 2 - 1) * lapping * 0.15;
+      const pad = Math.sin(t * 110 * Math.PI * 2) * 0.02
+        + Math.sin(t * 165 * Math.PI * 2) * 0.015
+        + Math.sin(t * 220 * Math.PI * 2 + Math.sin(t * 0.05) * 2) * 0.01;
+      data[i] = water + pad;
+    }
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 1800;
+
+  const reverb = ctx.createConvolver();
+  const reverbLen = 2 * ctx.sampleRate;
+  const reverbBuf = ctx.createBuffer(2, reverbLen, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = reverbBuf.getChannelData(ch);
+    for (let i = 0; i < reverbLen; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.6));
+  }
+  reverb.buffer = reverbBuf;
+
+  const wet = ctx.createGain();
+  wet.gain.value = 0.3;
+  const dry = ctx.createGain();
+  dry.gain.value = 0.7;
+
+  src.connect(lp);
+  lp.connect(dry).connect(master);
+  lp.connect(reverb).connect(wet).connect(master);
+  src.start();
+
+  return { master, stop: () => { src.stop(); reverb.disconnect(); } };
+}
+
+function createStoryForestEnchanted(ctx: AudioContext, vol: number): AmbientNodes {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(ctx.destination);
+
+  const bufSize = 6 * ctx.sampleRate;
+  const buf = ctx.createBuffer(2, bufSize, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < bufSize; i++) {
+      const t = i / ctx.sampleRate;
+      const drone = Math.sin(t * 82.4 * Math.PI * 2) * 0.04
+        + Math.sin(t * 123 * Math.PI * 2 + Math.sin(t * 0.15) * 3) * 0.03;
+      const bird = Math.sin(t * (2000 + Math.sin(t * 4) * 600) * Math.PI * 2)
+        * Math.exp(-((t % 2.5) * 2.5)) * 0.04;
+      const leaves = (Math.random() * 2 - 1) * 0.015 * (Math.sin(t * 0.3) * 0.5 + 0.5);
+      const twinkle = Math.sin(t * 3100 * Math.PI * 2) * Math.exp(-((t % 1.7) * 3)) * 0.02;
+      data[i] = drone + bird + leaves + twinkle;
+    }
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 1000;
+  bp.Q.value = 0.3;
+
+  const reverb = ctx.createConvolver();
+  const reverbLen = 3 * ctx.sampleRate;
+  const reverbBuf = ctx.createBuffer(2, reverbLen, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = reverbBuf.getChannelData(ch);
+    for (let i = 0; i < reverbLen; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 1.0));
+  }
+  reverb.buffer = reverbBuf;
+
+  const wet = ctx.createGain();
+  wet.gain.value = 0.4;
+  const dry = ctx.createGain();
+  dry.gain.value = 0.6;
+
+  src.connect(bp);
+  bp.connect(dry).connect(master);
+  bp.connect(reverb).connect(wet).connect(master);
+  src.start();
+
+  return { master, stop: () => { src.stop(); reverb.disconnect(); } };
+}
+
+function createStoryStars(ctx: AudioContext, vol: number): AmbientNodes {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(ctx.destination);
+
+  const bufSize = 8 * ctx.sampleRate;
+  const buf = ctx.createBuffer(2, bufSize, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < bufSize; i++) {
+      const t = i / ctx.sampleRate;
+      const space = Math.sin(t * 55 * Math.PI * 2) * 0.03
+        + Math.sin(t * 82.5 * Math.PI * 2 + Math.sin(t * 0.07) * 5) * 0.02
+        + Math.sin(t * 110 * Math.PI * 2) * 0.02;
+      const shimmer = Math.sin(t * 4400 * Math.PI * 2 + ch * 3) * Math.exp(-((t % 3.0) * 1.8)) * 0.018;
+      const cosmic = (Math.random() * 2 - 1) * 0.008 * (Math.sin(t * 0.1) * 0.5 + 0.5);
+      data[i] = space + shimmer + cosmic;
+    }
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 2500;
+
+  const reverb = ctx.createConvolver();
+  const reverbLen = 4 * ctx.sampleRate;
+  const reverbBuf = ctx.createBuffer(2, reverbLen, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = reverbBuf.getChannelData(ch);
+    for (let i = 0; i < reverbLen; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 1.5));
+  }
+  reverb.buffer = reverbBuf;
+
+  const wet = ctx.createGain();
+  wet.gain.value = 0.35;
+  const dry = ctx.createGain();
+  dry.gain.value = 0.65;
+
+  src.connect(lp);
+  lp.connect(dry).connect(master);
+  lp.connect(reverb).connect(wet).connect(master);
+  src.start();
+
+  return { master, stop: () => { src.stop(); reverb.disconnect(); } };
+}
+
 const GENERATORS: Record<SoundId, (ctx: AudioContext, vol: number) => AmbientNodes> = {
   rain: createRain,
   ocean: createOcean,
@@ -250,6 +401,9 @@ const GENERATORS: Record<SoundId, (ctx: AudioContext, vol: number) => AmbientNod
   wind: createWind,
   fire: createFire,
   stream: createStream,
+  s1: createStoryLake,
+  s2: createStoryForestEnchanted,
+  s3: createStoryStars,
 };
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -456,12 +610,12 @@ export default function AmbientScreen() {
               {SLEEP_STORIES.map((story) => {
                 const isPlaying = playingId === story.id;
                 return (
-                  <Pressable
-                    key={story.id}
-                    onPress={() => {}}
-                    accessibilityLabel={`Écouter ${story.name}`}
-                    accessibilityRole="button"
-                  >
+                    <Pressable
+                      key={story.id}
+                      onPress={() => togglePlay(story.id)}
+                      accessibilityLabel={`Écouter ${story.name}`}
+                      accessibilityRole="button"
+                    >
                     <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                       <View style={[styles.storyIcon, { backgroundColor: isPlaying ? colors.primaryContainer : colors.surfaceContainerHighest }]}>
                         {isPlaying ? (
