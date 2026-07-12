@@ -189,28 +189,39 @@ export default function Chat() {
     const techniqueRoute = item.technique ? TECHNIQUE_ROUTES[item.technique] : null;
     const techniqueLabel = item.technique ? TECHNIQUE_LABELS[item.technique] ?? item.technique : null;
     return (
-      <View style={{ alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 14 }}>
-        <View
-          style={[
-            styles.bubble,
-            softGlow,
-            isUser
-              ? { backgroundColor: colors.primary, borderBottomRightRadius: 4 }
-              : { backgroundColor: colors.surfaceContainerLowest, borderWidth: 1, borderColor: colors.surfaceVariant, borderBottomLeftRadius: 4 },
-          ]}
-        >
-          <Text style={[type.bodyMd, { color: isUser ? colors.onPrimary : colors.primary }]}>{item.content}</Text>
-        </View>
-        {techniqueRoute && techniqueLabel && (
-          <Pressable
-            style={[styles.techniqueChip, { backgroundColor: colors.surfaceContainerLow, borderColor: colors.outlineVariant }]}
-            onPress={() => router.push(techniqueRoute as any)}
-            accessibilityLabel={`Faire l'exercice : ${techniqueLabel}`}
-            accessibilityRole="button"
+      <View style={[styles.msgRow, isUser ? styles.msgRowUser : styles.msgRowBot]}>
+        {!isUser && (
+          <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
+            <Ionicons name="leaf" size={16} color={colors.primary} />
+          </View>
+        )}
+        <View style={{ maxWidth: '78%' }}>
+          <View
+            style={[
+              styles.bubble,
+              isUser
+                ? { backgroundColor: colors.primary, borderBottomRightRadius: 4 }
+                : { backgroundColor: colors.surfaceContainerLowest, borderWidth: 1, borderColor: colors.surfaceVariant, borderBottomLeftRadius: 4 },
+            ]}
           >
-            <Ionicons name="fitness" size={16} color={colors.primary} />
-            <Text style={[type.labelSm, { color: colors.primary }]}>{techniqueLabel}</Text>
-          </Pressable>
+            <Text style={[type.bodyMd, { color: isUser ? colors.onPrimary : colors.primary }]}>{item.content}</Text>
+          </View>
+          {techniqueRoute && techniqueLabel && (
+            <Pressable
+              style={[styles.techniqueChip, { backgroundColor: colors.surfaceContainerLow, borderColor: colors.outlineVariant }]}
+              onPress={() => router.push(techniqueRoute as any)}
+              accessibilityLabel={`Faire l'exercice : ${techniqueLabel}`}
+              accessibilityRole="button"
+            >
+              <Ionicons name="fitness" size={16} color={colors.primary} />
+              <Text style={[type.labelSm, { color: colors.primary }]}>{techniqueLabel}</Text>
+            </Pressable>
+          )}
+        </View>
+        {isUser && (
+          <View style={[styles.avatar, { backgroundColor: colors.secondaryContainer }]}>
+            <Ionicons name="person" size={16} color={colors.secondary} />
+          </View>
         )}
       </View>
     );
@@ -335,34 +346,37 @@ export default function Chat() {
                   const date = new Date(session.created_at);
                   const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
                   return (
-                    <Pressable
-                      onPress={() => switchSession(session)}
-                      onLongPress={() => deleteSession(session)}
-                      style={[
-                        styles.sessionItem,
-                        {
-                          backgroundColor: isActive ? colors.primaryFixed : colors.surfaceContainerLowest,
-                          borderColor: isActive ? colors.primary : colors.surfaceVariant,
-                        },
-                      ]}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[type.bodyMd, { color: isActive ? colors.primary : colors.onSurface }]}
-                          numberOfLines={1}
-                        >
-                          {session.title}
-                        </Text>
-                        <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>{dateStr}</Text>
-                      </View>
+                    <View style={styles.sessionRow}>
+                      <Pressable
+                        onPress={() => switchSession(session)}
+                        style={[
+                          styles.sessionItem,
+                          {
+                            flex: 1,
+                            backgroundColor: isActive ? colors.primaryFixed : colors.surfaceContainerLowest,
+                            borderColor: isActive ? colors.primary : colors.surfaceVariant,
+                          },
+                        ]}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[type.bodyMd, { color: isActive ? colors.primary : colors.onSurface }]}
+                            numberOfLines={1}
+                          >
+                            {session.title}
+                          </Text>
+                          <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>{dateStr}</Text>
+                        </View>
+                      </Pressable>
                       <Pressable
                         onPress={() => deleteSession(session)}
-                        hitSlop={8}
+                        style={[styles.deleteBtn, { backgroundColor: colors.errorContainer }]}
                         accessibilityLabel={`Supprimer ${session.title}`}
+                        accessibilityRole="button"
                       >
                         <Ionicons name="trash-outline" size={18} color={colors.error} />
                       </Pressable>
-                    </Pressable>
+                    </View>
                   );
                 }}
               />
@@ -376,7 +390,17 @@ export default function Chat() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8 },
-  bubble: { maxWidth: '85%', padding: 16, borderRadius: 20 },
+  msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginBottom: 16 },
+  msgRowUser: { justifyContent: 'flex-end' },
+  msgRowBot: { justifyContent: 'flex-start' },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bubble: { maxWidth: '100%', padding: 14, borderRadius: 18 },
   techniqueChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -441,12 +465,22 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 12,
   },
-  sessionItem: {
+  sessionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
+    marginBottom: 8,
+  },
+  sessionItem: {
     padding: 14,
     borderRadius: radius.md,
     borderWidth: 1,
+  },
+  deleteBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
