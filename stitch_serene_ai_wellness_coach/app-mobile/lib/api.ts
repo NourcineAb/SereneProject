@@ -43,15 +43,20 @@ async function doFetch(
 ): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const method = (options.method ?? "GET").toUpperCase();
+  const headers: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers as Record<string, string> ?? {}),
+  };
+  if (method !== "GET" && method !== "HEAD" && method !== "DELETE") {
+    headers["Content-Type"] = "application/json";
+  }
   try {
     const res = await fetch(`${BASE}${path}`, {
       ...options,
+      method,
       signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers ?? {}),
-      },
+      headers,
     });
     clearTimeout(timer);
     return res;

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -60,6 +59,7 @@ export default function Chat() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loadSessions = useCallback(async () => {
     setLoadingSessions(true);
@@ -107,9 +107,7 @@ export default function Chat() {
       setMessages(hydrated.length ? hydrated : [WELCOME]);
       setSessionId(session.id);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 80);
-    } catch {
-      Alert.alert('Erreur', 'Impossible de charger cette session');
-    }
+    } catch {}
   }, []);
 
   const startNewSession = useCallback(() => {
@@ -121,8 +119,8 @@ export default function Chat() {
 
   const deleteSession = useCallback(async (session: Session) => {
     if (deletingId === session.id) {
-      // Second tap = confirm
       setDeletingId(null);
+      setDeleteError(null);
       try {
         await api.sessionDelete(session.id);
         setSessions((prev) => prev.filter((s) => s.id !== session.id));
@@ -130,13 +128,15 @@ export default function Chat() {
           setSessionId(undefined);
           setMessages([WELCOME]);
         }
-      } catch {
-        Alert.alert('Erreur', 'Impossible de supprimer');
+      } catch (e: any) {
+        console.warn('Session delete failed:', e);
+        setDeleteError(e.message ?? 'Erreur de suppression');
+        setTimeout(() => setDeleteError(null), 3000);
       }
     } else {
-      // First tap = show confirm
       setDeletingId(session.id);
-      setTimeout(() => setDeletingId(null), 3000);
+      setDeleteError(null);
+      setTimeout(() => { if (deletingId === session.id) setDeletingId(null); }, 3000);
     }
   }, [sessionId, deletingId]);
 
@@ -324,6 +324,12 @@ export default function Chat() {
               <Ionicons name="add" size={20} color={colors.onPrimary} />
               <Text style={[type.bodyMd, { color: colors.onPrimary }]}>Nouvelle session</Text>
             </Pressable>
+
+            {deleteError && (
+              <View style={{ backgroundColor: colors.errorContainer, borderRadius: radius.md, padding: 10, marginBottom: 8 }}>
+                <Text style={[type.labelSm, { color: colors.error }]}>{deleteError}</Text>
+              </View>
+            )}
 
             {loadingSessions ? (
               <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
