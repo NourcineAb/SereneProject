@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Animated,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,7 +9,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio, AVPlaybackStatus } from 'expo-av';
 import { useAuth } from '../lib/auth';
 import { Card } from '../components/ui';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -19,19 +17,19 @@ import { radius, softGlow, spacing } from '../theme/serene';
 
 type SoundId = 'rain' | 'ocean' | 'forest' | 'wind' | 'fire' | 'stream';
 
-const SOUNDS: { id: SoundId; name: string; icon: string; duration: string; uri: string }[] = [
-  { id: 'rain', name: 'Pluie', icon: 'rainy-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/10/14/audio_33f66fb5e0.mp3' },
-  { id: 'ocean', name: 'Océan', icon: 'water-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/08/02/audio_878a4e0588.mp3' },
-  { id: 'forest', name: 'Forêt', icon: 'leaf-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2024/11/04/audio_6114388368.mp3' },
-  { id: 'wind', name: 'Vent', icon: 'airplane-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/10/30/audio_4a27e99874.mp3' },
-  { id: 'fire', name: 'Feu de cheminée', icon: 'flame-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/11/22/audio_b1ec0a390c.mp3' },
-  { id: 'stream', name: 'Ruisseau', icon: 'water', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/08/02/audio_2da579e594.mp3' },
+const SOUNDS: { id: SoundId; name: string; icon: string }[] = [
+  { id: 'rain', name: 'Pluie', icon: 'rainy-outline' },
+  { id: 'ocean', name: 'Océan', icon: 'water-outline' },
+  { id: 'forest', name: 'Forêt', icon: 'leaf-outline' },
+  { id: 'wind', name: 'Vent', icon: 'airplane-outline' },
+  { id: 'fire', name: 'Feu de cheminée', icon: 'flame-outline' },
+  { id: 'stream', name: 'Ruisseau', icon: 'water' },
 ];
 
 const SLEEP_STORIES = [
-  { id: 's1', name: 'Le lac paisible', duration: '15 min', icon: 'moon-outline', uri: '' },
-  { id: 's2', name: 'La forêt enchantée', duration: '20 min', icon: 'star-outline', uri: '' },
-  { id: 's3', name: 'Les étoiles filantes', duration: '12 min', icon: 'sparkles-outline', uri: '' },
+  { id: 's1', name: 'Le lac paisible', duration: '15 min', icon: 'moon-outline' },
+  { id: 's2', name: 'La forêt enchantée', duration: '20 min', icon: 'star-outline' },
+  { id: 's3', name: 'Les étoiles filantes', duration: '12 min', icon: 'sparkles-outline' },
 ];
 
 const TIMER_OPTIONS = [
@@ -43,7 +41,6 @@ const TIMER_OPTIONS = [
 
 function PulsingIcon({ icon, color, size }: { icon: string; color: string; size: number }) {
   const pulse = useRef(new Animated.Value(1)).current;
-
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -52,13 +49,210 @@ function PulsingIcon({ icon, color, size }: { icon: string; color: string; size:
       ]),
     ).start();
   }, [pulse]);
-
   return (
     <Animated.View style={{ transform: [{ scale: pulse }] }}>
       <Ionicons name={icon as any} size={size} color={color} />
     </Animated.View>
   );
 }
+
+// ── Web Audio ambient sound generators ──────────────────────────────────────
+
+type AmbientNodes = { master: GainNode; stop: () => void };
+
+function createRain(ctx: AudioContext, vol: number): AmbientNodes {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(ctx.destination);
+
+  const bufSize = 2 * ctx.sampleRate;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 4000;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 8000;
+
+  src.connect(hp).connect(lp).connect(master);
+  src.start();
+
+  return { master, stop: () => { src.stop(); } };
+}
+
+function createOcean(ctx: AudioContext, vol: number): AmbientNodes {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(ctx.destination);
+
+  const bufSize = 4 * ctx.sampleRate;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) {
+    const t = i / ctx.sampleRate;
+    const wave = Math.sin(t * 0.15 * Math.PI * 2) * 0.5 + 0.5;
+    data[i] = (Math.random() * 2 - 1) * wave;
+  }
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 600;
+
+  src.connect(lp).connect(master);
+  src.start();
+
+  return { master, stop: () => { src.stop(); } };
+}
+
+function createForest(ctx: AudioContext, vol: number): AmbientNodes {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(ctx.destination);
+
+  const bufSize = 3 * ctx.sampleRate;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) {
+    const t = i / ctx.sampleRate;
+    const chirp = Math.sin(t * 2200 * Math.PI * 2) * Math.exp(-((t % 0.8) * 5));
+    const rustle = (Math.random() * 2 - 1) * 0.02;
+    data[i] = chirp * 0.08 + rustle;
+  }
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 2000;
+  bp.Q.value = 2;
+
+  src.connect(bp).connect(master);
+  src.start();
+
+  return { master, stop: () => { src.stop(); } };
+}
+
+function createWind(ctx: AudioContext, vol: number): AmbientNodes {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(ctx.destination);
+
+  const bufSize = 4 * ctx.sampleRate;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) {
+    const t = i / ctx.sampleRate;
+    const sweep = Math.sin(t * 0.08 * Math.PI * 2) * 0.5 + 0.5;
+    data[i] = (Math.random() * 2 - 1) * sweep;
+  }
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 400;
+  lp.Q.value = 1;
+
+  const lfo = ctx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = 0.1;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 200;
+  lfo.connect(lfoGain).connect(lp.frequency);
+  lfo.start();
+
+  src.connect(lp).connect(master);
+  src.start();
+
+  return { master, stop: () => { src.stop(); lfo.stop(); } };
+}
+
+function createFire(ctx: AudioContext, vol: number): AmbientNodes {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(ctx.destination);
+
+  const bufSize = 3 * ctx.sampleRate;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) {
+    const t = i / ctx.sampleRate;
+    const crackle = Math.random() > 0.997 ? (Math.random() - 0.5) * 0.6 : 0;
+    const hum = Math.sin(t * 80 * Math.PI * 2) * 0.015;
+    const noise = (Math.random() * 2 - 1) * 0.03;
+    data[i] = crackle + hum + noise;
+  }
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 2000;
+
+  src.connect(lp).connect(master);
+  src.start();
+
+  return { master, stop: () => { src.stop(); } };
+}
+
+function createStream(ctx: AudioContext, vol: number): AmbientNodes {
+  const master = ctx.createGain();
+  master.gain.value = vol;
+  master.connect(ctx.destination);
+
+  const bufSize = 3 * ctx.sampleRate;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) {
+    const t = i / ctx.sampleRate;
+    const bubble = Math.sin(t * 1800 * Math.PI * 2 + Math.sin(t * 3) * 4) * 0.03;
+    const flow = (Math.random() * 2 - 1) * 0.06;
+    data[i] = bubble + flow;
+  }
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 1200;
+  bp.Q.value = 0.5;
+
+  src.connect(bp).connect(master);
+  src.start();
+
+  return { master, stop: () => { src.stop(); } };
+}
+
+const GENERATORS: Record<SoundId, (ctx: AudioContext, vol: number) => AmbientNodes> = {
+  rain: createRain,
+  ocean: createOcean,
+  forest: createForest,
+  wind: createWind,
+  fire: createFire,
+  stream: createStream,
+};
+
+// ── Component ───────────────────────────────────────────────────────────────
 
 export default function AmbientScreen() {
   const colors = useColors();
@@ -72,82 +266,63 @@ export default function AmbientScreen() {
   const [timerMinutes, setTimerMinutes] = useState<number | null>(null);
   const [showTimerPicker, setShowTimerPicker] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const nodesRef = useRef<AmbientNodes | null>(null);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      soundRef.current?.unloadAsync().catch(() => {});
+      nodesRef.current?.stop();
+      ctxRef.current?.close().catch(() => {});
     };
   }, []);
 
-  const stopSound = useCallback(async () => {
-    if (soundRef.current) {
-      try {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-      } catch {}
-      soundRef.current = null;
-    }
-    setIsLoaded(false);
+  const stopSound = useCallback(() => {
+    nodesRef.current?.stop();
+    nodesRef.current = null;
+    ctxRef.current?.close().catch(() => {});
+    ctxRef.current = null;
   }, []);
 
-  const playSound = useCallback(async (id: string) => {
-    await stopSound();
+  const playSound = useCallback((id: SoundId) => {
+    stopSound();
+    const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
 
-    const soundDef = SOUNDS.find((s) => s.id === id);
-    const storyDef = SLEEP_STORIES.find((s) => s.id === id);
-    const uri = soundDef?.uri || storyDef?.uri;
-    if (!uri) return;
-
-    try {
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
-      const { sound } = await Audio.Sound.createAsync(
-        { uri },
-        { isLooping: true, volume, shouldPlay: true },
-      );
-      soundRef.current = sound;
-      setIsLoaded(true);
-
-      sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
-        if (status.isLoaded && status.didJustFinish && !status.isLooping) {
-          setPlayingId(null);
-          setIsLoaded(false);
-        }
-      });
-    } catch {
-      setPlayingId(null);
-    }
+    const ctx = new AudioCtx() as AudioContext;
+    const nodes = GENERATORS[id](ctx, volume);
+    ctxRef.current = ctx;
+    nodesRef.current = nodes;
   }, [volume, stopSound]);
 
-  const togglePlay = useCallback(async (id: string) => {
+  const togglePlay = useCallback((id: string) => {
     if (playingId === id) {
-      await stopSound();
+      stopSound();
       setPlayingId(null);
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
     } else {
+      stopSound();
       setPlayingId(id);
-      await playSound(id);
+      playSound(id as SoundId);
     }
   }, [playingId, stopSound, playSound]);
 
   useEffect(() => {
-    if (soundRef.current && isLoaded) {
-      soundRef.current.setVolumeAsync(volume).catch(() => {});
+    if (nodesRef.current && ctxRef.current) {
+      nodesRef.current.master.gain.value = volume;
     }
-  }, [volume, isLoaded]);
+  }, [volume]);
 
   const selectTimer = (minutes: number) => {
     setTimerMinutes(minutes);
     setShowTimerPicker(false);
     if (timerRef.current) clearTimeout(timerRef.current);
     if (playingId) {
-      timerRef.current = setTimeout(async () => {
-        await stopSound();
+      timerRef.current = setTimeout(() => {
+        stopSound();
         setPlayingId(null);
         setTimerMinutes(null);
       }, minutes * 60 * 1000);
@@ -179,12 +354,16 @@ export default function AmbientScreen() {
               <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>VOLUME</Text>
             </View>
             <View style={styles.volumeRow}>
-              <Ionicons name="volume-mute-outline" size={16} color={colors.outline} />
+              <Pressable onPress={() => setVolume(Math.max(0, volume - 0.1))}>
+                <Ionicons name="volume-mute-outline" size={16} color={colors.outline} />
+              </Pressable>
               <View style={[styles.sliderTrack, { backgroundColor: colors.surfaceContainer }]}>
                 <View style={[styles.sliderFill, { width: `${volume * 100}%`, backgroundColor: colors.primary }]} />
                 <View style={[styles.sliderThumb, { left: `${volume * 100 - 2}%`, backgroundColor: colors.primary }]} />
               </View>
-              <Ionicons name="volume-high-outline" size={16} color={colors.outline} />
+              <Pressable onPress={() => setVolume(Math.min(1, volume + 0.1))}>
+                <Ionicons name="volume-high-outline" size={16} color={colors.outline} />
+              </Pressable>
             </View>
             <View style={styles.row}>
               <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>MINUTEUR</Text>
@@ -248,7 +427,6 @@ export default function AmbientScreen() {
                   <Text style={[type.bodyMd, { color: colors.onSurface, textAlign: 'center' }]}>
                     {sound.name}
                   </Text>
-                  <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>{sound.duration}</Text>
                   <View style={[styles.playBtn, { backgroundColor: colors.surfaceContainerHighest }]}>
                     <Ionicons
                       name={isPlaying ? 'pause' : 'play'}
@@ -280,7 +458,7 @@ export default function AmbientScreen() {
                 return (
                   <Pressable
                     key={story.id}
-                    onPress={() => story.uri && togglePlay(story.uri)}
+                    onPress={() => {}}
                     accessibilityLabel={`Écouter ${story.name}`}
                     accessibilityRole="button"
                   >
@@ -296,11 +474,7 @@ export default function AmbientScreen() {
                         <Text style={[type.bodyMd, { color: colors.onSurface }]}>{story.name}</Text>
                         <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>{story.duration}</Text>
                       </View>
-                      <Ionicons
-                        name={isPlaying ? 'pause-circle' : 'play-circle'}
-                        size={32}
-                        color={colors.primary}
-                      />
+                      <Ionicons name="play-circle" size={32} color={colors.primary} />
                     </Card>
                   </Pressable>
                 );
@@ -308,7 +482,7 @@ export default function AmbientScreen() {
             </View>
           ) : (
             <Pressable
-              onPress={() => {/* navigate to paywall */}}
+              onPress={() => {}}
               style={[styles.premiumGate, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.surfaceVariant }]}
               accessibilityRole="button"
               accessibilityLabel="Débloquer les histoires avec Serene Pro"
