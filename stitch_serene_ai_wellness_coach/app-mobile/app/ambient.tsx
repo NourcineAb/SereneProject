@@ -419,16 +419,32 @@ export default function AmbientScreen() {
   const [volume, setVolume] = useState(0.7);
   const [timerMinutes, setTimerMinutes] = useState<number | null>(null);
   const [showTimerPicker, setShowTimerPicker] = useState(false);
+  const [timerRemaining, setTimerRemaining] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const nodesRef = useRef<AmbientNodes | null>(null);
+  const volumeRef = useRef(0.7);
+  const playingIdRef = useRef<string | null>(null);
+  const timerMinutesRef = useRef<number | null>(null);
+
+  volumeRef.current = volume;
+  playingIdRef.current = playingId;
+  timerMinutesRef.current = timerMinutes;
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
       nodesRef.current?.stop();
       ctxRef.current?.close().catch(() => {});
     };
+  }, []);
+
+  const clearTimers = useCallback(() => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
+    setTimerRemaining(null);
   }, []);
 
   const stopSound = useCallback(() => {
@@ -438,31 +454,69 @@ export default function AmbientScreen() {
     ctxRef.current = null;
   }, []);
 
+  const startTimer = useCallback((minutes: number) => {
+    clearTimers();
+    const totalMs = minutes * 60 * 1000;
+    const start = Date.now();
+    setTimerRemaining(totalMs);
+
+    countdownRef.current = setInterval(() => {
+      const remaining = totalMs - (Date.now() - start);
+      if (remaining <= 0) {
+        if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
+        if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+        nodesRef.current?.stop();
+        nodesRef.current = null;
+        ctxRef.current?.close().catch(() => {});
+        ctxRef.current = null;
+        setPlayingId(null);
+        setTimerMinutes(null);
+        setTimerRemaining(null);
+      } else {
+        setTimerRemaining(remaining);
+      }
+    }, 1000);
+
+    timerRef.current = setTimeout(() => {
+      if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
+      timerRef.current = null;
+      nodesRef.current?.stop();
+      nodesRef.current = null;
+      ctxRef.current?.close().catch(() => {});
+      ctxRef.current = null;
+      setPlayingId(null);
+      setTimerMinutes(null);
+      setTimerRemaining(null);
+    }, totalMs);
+  }, [clearTimers]);
+
   const playSound = useCallback((id: SoundId) => {
     stopSound();
     const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
 
     const ctx = new AudioCtx() as AudioContext;
-    const nodes = GENERATORS[id](ctx, volume);
+    const nodes = GENERATORS[id](ctx, volumeRef.current);
     ctxRef.current = ctx;
     nodesRef.current = nodes;
-  }, [volume, stopSound]);
+  }, [stopSound]);
 
   const togglePlay = useCallback((id: string) => {
-    if (playingId === id) {
+    if (playingIdRef.current === id) {
       stopSound();
+      clearTimers();
       setPlayingId(null);
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
+      setTimerMinutes(null);
     } else {
       stopSound();
+      clearTimers();
       setPlayingId(id);
       playSound(id as SoundId);
+      if (timerMinutesRef.current) {
+        startTimer(timerMinutesRef.current);
+      }
     }
-  }, [playingId, stopSound, playSound]);
+  }, [stopSound, playSound, clearTimers, startTimer]);
 
   useEffect(() => {
     if (nodesRef.current && ctxRef.current) {
@@ -473,14 +527,18 @@ export default function AmbientScreen() {
   const selectTimer = (minutes: number) => {
     setTimerMinutes(minutes);
     setShowTimerPicker(false);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (playingId) {
-      timerRef.current = setTimeout(() => {
-        stopSound();
-        setPlayingId(null);
-        setTimerMinutes(null);
-      }, minutes * 60 * 1000);
+    if (playingIdRef.current) {
+      startTimer(minutes);
     }
+  };
+
+  const formatRemaining = (ms: number) => {
+    const totalSec = Math.ceil(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}h ${m < 10 ? '0' : ''}${m}min`;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
   return (
@@ -500,58 +558,92 @@ export default function AmbientScreen() {
           <Text style={[type.headlineLg, { color: colors.primary }]}>Sons Apaisants</Text>
         </View>
 
-        {/* Volume control */}
-        {playingId && (
-          <Card style={{ gap: 12 }}>
-            <View style={styles.row}>
-              <Ionicons name="volume-low-outline" size={20} color={colors.onSurfaceVariant} />
-              <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>VOLUME</Text>
-            </View>
-            <View style={styles.volumeRow}>
-              <Pressable onPress={() => setVolume(Math.max(0, volume - 0.1))}>
-                <Ionicons name="volume-mute-outline" size={16} color={colors.outline} />
-              </Pressable>
-              <View style={[styles.sliderTrack, { backgroundColor: colors.surfaceContainer }]}>
-                <View style={[styles.sliderFill, { width: `${volume * 100}%`, backgroundColor: colors.primary }]} />
-                <View style={[styles.sliderThumb, { left: `${volume * 100 - 2}%`, backgroundColor: colors.primary }]} />
-              </View>
-              <Pressable onPress={() => setVolume(Math.min(1, volume + 0.1))}>
-                <Ionicons name="volume-high-outline" size={16} color={colors.outline} />
-              </Pressable>
-            </View>
-            <View style={styles.row}>
+        {/* Volume & Timer control — always visible */}
+        <Card style={{ gap: 12 }}>
+          <View style={styles.row}>
+            <Ionicons name="volume-low-outline" size={20} color={colors.onSurfaceVariant} />
+            <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>VOLUME</Text>
+            <Text style={[type.labelSm, { color: colors.primary }]}>{Math.round(volume * 100)}%</Text>
+          </View>
+          <View style={styles.volumeRow}>
+            <Pressable
+              onPress={() => setVolume(Math.max(0, Math.round((volume - 0.1) * 10) / 10))}
+              hitSlop={12}
+              accessibilityLabel="Baisser le volume"
+            >
+              <Ionicons name="volume-mute-outline" size={22} color={colors.outline} />
+            </Pressable>
+            <Pressable
+              style={[styles.sliderTrack, { backgroundColor: colors.surfaceContainer }]}
+              onPress={(e) => {
+                const { locationX } = e.nativeEvent as any;
+                if (locationX != null) {
+                  const trackWidth = 200;
+                  const pct = Math.max(0, Math.min(1, locationX / trackWidth));
+                  setVolume(Math.round(pct * 10) / 10);
+                }
+              }}
+            >
+              <View style={[styles.sliderFill, { width: `${volume * 100}%`, backgroundColor: colors.primary }]} />
+              <View style={[styles.sliderThumb, { left: `${volume * 100 - 2}%`, backgroundColor: colors.primary }]} />
+            </Pressable>
+            <Pressable
+              onPress={() => setVolume(Math.min(1, Math.round((volume + 0.1) * 10) / 10))}
+              hitSlop={12}
+              accessibilityLabel="Monter le volume"
+            >
+              <Ionicons name="volume-high-outline" size={22} color={colors.outline} />
+            </Pressable>
+          </View>
+
+          <View style={styles.row}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="timer-outline" size={18} color={colors.onSurfaceVariant} />
               <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>MINUTEUR</Text>
-              <Pressable onPress={() => setShowTimerPicker(!showTimerPicker)}>
-                <Text style={[type.labelSm, { color: colors.primary }]}>
-                  {timerMinutes ? TIMER_OPTIONS.find((t) => t.minutes === timerMinutes)?.label ?? 'Personnalisé' : 'Aucun'}
+              {timerRemaining != null && (
+                <Text style={[type.labelSm, { color: colors.primary, fontWeight: '600' }]}>
+                  {formatRemaining(timerRemaining)}
                 </Text>
-              </Pressable>
+              )}
             </View>
-            {showTimerPicker && (
-              <View style={styles.timerRow}>
-                {TIMER_OPTIONS.map((opt) => (
-                  <Pressable
-                    key={opt.minutes}
+            <Pressable onPress={() => setShowTimerPicker(!showTimerPicker)}>
+              <Text style={[type.labelSm, { color: colors.primary }]}>
+                {timerMinutes ? TIMER_OPTIONS.find((t) => t.minutes === timerMinutes)?.label ?? 'Personnalisé' : 'Aucun'}
+              </Text>
+            </Pressable>
+          </View>
+          {showTimerPicker && (
+            <View style={styles.timerRow}>
+              {TIMER_OPTIONS.map((opt) => (
+                <Pressable
+                  key={opt.minutes}
+                  style={[
+                    styles.timerOption,
+                    timerMinutes === opt.minutes && { backgroundColor: colors.primaryFixed },
+                  ]}
+                  onPress={() => selectTimer(opt.minutes)}
+                >
+                  <Text
                     style={[
-                      styles.timerOption,
-                      timerMinutes === opt.minutes && { backgroundColor: colors.primaryFixed },
+                      type.labelSm,
+                      { color: timerMinutes === opt.minutes ? colors.primary : colors.onSurfaceVariant },
                     ]}
-                    onPress={() => selectTimer(opt.minutes)}
                   >
-                    <Text
-                      style={[
-                        type.labelSm,
-                        { color: timerMinutes === opt.minutes ? colors.primary : colors.onSurfaceVariant },
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </Card>
-        )}
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              ))}
+              {timerMinutes != null && (
+                <Pressable
+                  style={[styles.timerOption, { borderColor: colors.error }]}
+                  onPress={() => { setTimerMinutes(null); clearTimers(); }}
+                >
+                  <Text style={[type.labelSm, { color: colors.error }]}>Annuler</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+        </Card>
 
         {/* Sounds section */}
         <View style={{ gap: spacing.gutter }}>
@@ -628,7 +720,7 @@ export default function AmbientScreen() {
                         <Text style={[type.bodyMd, { color: colors.onSurface }]}>{story.name}</Text>
                         <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>{story.duration}</Text>
                       </View>
-                      <Ionicons name="play-circle" size={32} color={colors.primary} />
+                      <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color={colors.primary} />
                     </Card>
                   </Pressable>
                 );
