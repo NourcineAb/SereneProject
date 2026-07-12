@@ -50,7 +50,6 @@ export default function SettingsScreen() {
   const [savingPw, setSavingPw] = useState(false);
 
   const [pushEnabled, setPushEnabled] = useState(true);
-  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -118,99 +117,6 @@ export default function SettingsScreen() {
       );
     } finally {
       setSavingPw(false);
-    }
-  };
-
-  const escapeCsv = (val: string | number | null | undefined) => {
-    const s = String(val ?? "");
-    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-      return '"' + s.replace(/"/g, '""') + '"';
-    }
-    return s;
-  };
-
-  const downloadBlob = (content: string, filename: string, mimeType: string) => {
-    if (typeof document === "undefined") return;
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const [data, journalEntries] = await Promise.all([
-        api.exportData(),
-        api.journalList().catch(() => []),
-      ]);
-
-      const lines: string[] = [];
-      const nl = "\r\n";
-
-      // ── Profile section ──
-      lines.push("=== PROFIL ===");
-      lines.push("Nom,Email,Date de naissance");
-      lines.push(
-        [
-          escapeCsv(data.profile.name),
-          escapeCsv(data.profile.email),
-          escapeCsv(data.profile.birth_date as string | undefined),
-        ].join(","),
-      );
-      lines.push("");
-
-      // ── Mood logs ──
-      lines.push("=== HUMEURS ===");
-      lines.push("ID,Score,Label,Note,Date");
-      for (const m of data.mood_logs) {
-        lines.push(
-          [m.id, m.score, escapeCsv(m.label), escapeCsv(m.note), escapeCsv(m.created_at)].join(","),
-        );
-      }
-      lines.push("");
-
-      // ── Journal entries ──
-      lines.push("=== JOURNAL ===");
-      lines.push("ID,ScoreHumeur,Contenu,Technique,Date");
-      for (const j of journalEntries) {
-        lines.push(
-          [j.id, j.mood_score, escapeCsv(j.content), escapeCsv(j.technique), escapeCsv(j.created_at)].join(","),
-        );
-      }
-      lines.push("");
-
-      // ── Sessions ──
-      lines.push("=== SESSIONS COACHING ===");
-      lines.push("ID,Titre,NombreMessages,Date");
-      for (const s of data.sessions) {
-        lines.push(
-          [s.id, escapeCsv(s.title), s.messages.length, escapeCsv(s.created_at)].join(","),
-        );
-      }
-
-      const csvContent = lines.join(nl);
-      const now = new Date().toISOString().slice(0, 10);
-      const filename = `serene_export_${now}.csv`;
-
-      downloadBlob(csvContent, filename, "text/csv;charset=utf-8");
-
-      const summary = t("settings.exportSummary", {
-        name: data.profile.name,
-        email: data.profile.email,
-        sessions: String(data.sessions.length),
-        moods: String(data.mood_logs.length),
-      });
-      Alert.alert(t("settings.exportTitle"), summary + "\n\nFichier : " + filename);
-    } catch (e: any) {
-      Alert.alert(t("settings.errorTitle"), e.message ?? t("settings.exportError"));
-    } finally {
-      setExporting(false);
     }
   };
 
