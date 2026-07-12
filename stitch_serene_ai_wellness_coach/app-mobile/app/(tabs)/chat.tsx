@@ -59,6 +59,7 @@ export default function Chat() {
   const [showHistory, setShowHistory] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const loadSessions = useCallback(async () => {
     setLoadingSessions(true);
@@ -119,30 +120,25 @@ export default function Chat() {
   }, []);
 
   const deleteSession = useCallback(async (session: Session) => {
-    Alert.alert(
-      'Supprimer la session',
-      `"${session.title}" sera supprimée définitivement.`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.sessionDelete(session.id);
-              setSessions((prev) => prev.filter((s) => s.id !== session.id));
-              if (sessionId === session.id) {
-                setSessionId(undefined);
-                setMessages([WELCOME]);
-              }
-            } catch {
-              Alert.alert('Erreur', 'Impossible de supprimer');
-            }
-          },
-        },
-      ],
-    );
-  }, [sessionId]);
+    if (deletingId === session.id) {
+      // Second tap = confirm
+      setDeletingId(null);
+      try {
+        await api.sessionDelete(session.id);
+        setSessions((prev) => prev.filter((s) => s.id !== session.id));
+        if (sessionId === session.id) {
+          setSessionId(undefined);
+          setMessages([WELCOME]);
+        }
+      } catch {
+        Alert.alert('Erreur', 'Impossible de supprimer');
+      }
+    } else {
+      // First tap = show confirm
+      setDeletingId(session.id);
+      setTimeout(() => setDeletingId(null), 3000);
+    }
+  }, [sessionId, deletingId]);
 
   const send = async (text: string) => {
     const trimmed = text.trim();
@@ -370,11 +366,20 @@ export default function Chat() {
                       </Pressable>
                       <Pressable
                         onPress={() => deleteSession(session)}
-                        style={[styles.deleteBtn, { backgroundColor: colors.errorContainer }]}
-                        accessibilityLabel={`Supprimer ${session.title}`}
+                        style={[
+                          styles.deleteBtn,
+                          deletingId === session.id
+                            ? { backgroundColor: colors.error }
+                            : { backgroundColor: colors.errorContainer },
+                        ]}
+                        accessibilityLabel={deletingId === session.id ? `Confirmer suppression de ${session.title}` : `Supprimer ${session.title}`}
                         accessibilityRole="button"
                       >
-                        <Ionicons name="trash-outline" size={18} color={colors.error} />
+                        <Ionicons
+                          name={deletingId === session.id ? 'checkmark' : 'trash-outline'}
+                          size={18}
+                          color={deletingId === session.id ? colors.onError : colors.error}
+                        />
                       </Pressable>
                     </View>
                   );
