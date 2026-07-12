@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -13,7 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '../../lib/api';
+import { api, Session } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useI18n } from '../../lib/i18n';
 import { useColors, useType } from '../../lib/theme-provider';
@@ -22,6 +24,22 @@ import { AdBanner } from '../../components/AdBanner';
 import { radius, softGlow, spacing } from '../../theme/serene';
 
 type Msg = { id: string; role: 'user' | 'assistant'; content: string; technique?: string | null };
+
+const TECHNIQUE_ROUTES: Record<string, string> = {
+  box_breathing: '/breathing',
+  grounding_54321: '/grounding',
+  pmr: '/pmr',
+  cognitive_reframing: '/reframing',
+  journaling: '/journal',
+};
+
+const TECHNIQUE_LABELS: Record<string, string> = {
+  box_breathing: 'Respiration guidée',
+  grounding_54321: 'Ancrage 5-4-3-2-1',
+  pmr: 'Relaxation musculaire',
+  cognitive_reframing: 'Restructuration cognitive',
+  journaling: 'Journal réflexif',
+};
 
 export default function Chat() {
   const insets = useSafeAreaInsets();
@@ -37,13 +55,27 @@ export default function Chat() {
   const [sessionId, setSessionId] = useState<number | undefined>();
   const listRef = useRef<FlatList>(null);
 
+  // Session history
+  const [showHistory, setShowHistory] = useState(false);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
+  const loadSessions = useCallback(async () => {
+    setLoadingSessions(true);
+    try {
+      const list = await api.listSessions();
+      setSessions(list);
+    } catch {}
+    setLoadingSessions(false);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const sessions = await api.listSessions();
-        if (cancelled || !sessions.length) return;
-        const latest = sessions[0];
+        const sessionsList = await api.listSessions();
+        if (cancelled || !sessionsList.length) return;
+        const latest = sessionsList[0];
         const history = await api.sessionMessages(latest.id);
         if (cancelled || !history.length) return;
         const hydrated: Msg[] = history.map((m) => ({
@@ -54,13 +86,63 @@ export default function Chat() {
         }));
         setMessages(hydrated);
         setSessionId(latest.id);
+        setSessions(sessionsList);
         setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 80);
-      } catch {
-        // Offline or backend unavailable
-      }
+      } catch {}
     })();
     return () => { cancelled = true; };
   }, []);
+
+  const switchSession = useCallback(async (session: Session) => {
+    setShowHistory(false);
+    try {
+      const history = await api.sessionMessages(session.id);
+      const hydrated: Msg[] = history.map((m) => ({
+        id: String(m.id),
+        role: m.role,
+        content: m.content,
+        technique: m.technique,
+      }));
+      setMessages(hydrated.length ? hydrated : [WELCOME]);
+      setSessionId(session.id);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 80);
+    } catch {
+      Alert.alert('Erreur', 'Impossible de charger cette session');
+    }
+  }, []);
+
+  const startNewSession = useCallback(() => {
+    setShowHistory(false);
+    setSessionId(undefined);
+    setMessages([WELCOME]);
+    setInput('');
+  }, []);
+
+  const deleteSession = useCallback(async (session: Session) => {
+    Alert.alert(
+      'Supprimer la session',
+      `"${session.title}" sera supprimée définitivement.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.sessionDelete(session.id);
+              setSessions((prev) => prev.filter((s) => s.id !== session.id));
+              if (sessionId === session.id) {
+                setSessionId(undefined);
+                setMessages([WELCOME]);
+              }
+            } catch {
+              Alert.alert('Erreur', 'Impossible de supprimer');
+            }
+          },
+        },
+      ],
+    );
+  }, [sessionId]);
 
   const send = async (text: string) => {
     const trimmed = text.trim();
@@ -76,12 +158,13 @@ export default function Chat() {
         router.push('/paywall');
         return;
       }
-      setSessionId(res.session_id);
+      if (res.session_id && res.session_id !== 0) {
+        setSessionId(res.session_id);
+      }
       setMessages((m) => [
         ...m,
         { id: `a${Date.now()}`, role: 'assistant', content: res.reply, technique: res.technique },
       ]);
-      // Update challenge progress for all active challenges
       try {
         const myChallenges = await getMyChallenges();
         await Promise.all(
@@ -103,6 +186,8 @@ export default function Chat() {
 
   const renderItem = ({ item }: { item: Msg }) => {
     const isUser = item.role === 'user';
+    const techniqueRoute = item.technique ? TECHNIQUE_ROUTES[item.technique] : null;
+    const techniqueLabel = item.technique ? TECHNIQUE_LABELS[item.technique] ?? item.technique : null;
     return (
       <View style={{ alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 14 }}>
         <View
@@ -116,15 +201,15 @@ export default function Chat() {
         >
           <Text style={[type.bodyMd, { color: isUser ? colors.onPrimary : colors.primary }]}>{item.content}</Text>
         </View>
-        {item.technique === 'box_breathing' && (
+        {techniqueRoute && techniqueLabel && (
           <Pressable
             style={[styles.techniqueChip, { backgroundColor: colors.surfaceContainerLow, borderColor: colors.outlineVariant }]}
-            onPress={() => router.push('/breathing')}
-            accessibilityLabel="Faire l'exercice de respiration guidé"
+            onPress={() => router.push(techniqueRoute as any)}
+            accessibilityLabel={`Faire l'exercice : ${techniqueLabel}`}
             accessibilityRole="button"
           >
             <Ionicons name="fitness" size={16} color={colors.primary} />
-            <Text style={[type.labelSm, { color: colors.primary }]}>{t('chat.exercise')}</Text>
+            <Text style={[type.labelSm, { color: colors.primary }]}>{techniqueLabel}</Text>
           </Pressable>
         )}
       </View>
@@ -137,16 +222,32 @@ export default function Chat() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={0}
     >
-      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: spacing.containerMobile }}>
-        <Text
-          style={[type.labelSm, { color: colors.outline, textAlign: 'center' }]}
-          accessibilityRole="header"
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 8, paddingHorizontal: spacing.containerMobile }]}>
+        <Pressable
+          onPress={() => { loadSessions(); setShowHistory(true); }}
+          hitSlop={12}
+          accessibilityLabel="Historique des sessions"
+          accessibilityRole="button"
         >
-          {t('chat.today')}
-        </Text>
-        <Text style={[type.titleMd, { color: colors.secondary, textAlign: 'center' }]}>
-          {t('chat.sessionTitle')}
-        </Text>
+          <Ionicons name="list-outline" size={26} color={colors.primary} />
+        </Pressable>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={[type.labelSm, { color: colors.outline, textAlign: 'center' }]} accessibilityRole="header">
+            {t('chat.today')}
+          </Text>
+          <Text style={[type.titleMd, { color: colors.secondary, textAlign: 'center' }]}>
+            {t('chat.sessionTitle')}
+          </Text>
+        </View>
+        <Pressable
+          onPress={startNewSession}
+          hitSlop={12}
+          accessibilityLabel="Nouvelle session"
+          accessibilityRole="button"
+        >
+          <Ionicons name="add-circle-outline" size={26} color={colors.primary} />
+        </Pressable>
       </View>
 
       <FlatList
@@ -197,11 +298,84 @@ export default function Chat() {
           <Ionicons name="send" size={20} color={colors.onPrimary} />
         </Pressable>
       </View>
+
+      {/* ── Session History Modal ─────────────────────────────── */}
+      <Modal visible={showHistory} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background, paddingTop: insets.top + 16 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[type.headlineMd, { color: colors.primary }]}>Sessions</Text>
+              <Pressable onPress={() => setShowHistory(false)} hitSlop={12}>
+                <Ionicons name="close" size={24} color={colors.outline} />
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={[styles.newSessionBtn, { backgroundColor: colors.primary }]}
+              onPress={startNewSession}
+            >
+              <Ionicons name="add" size={20} color={colors.onPrimary} />
+              <Text style={[type.bodyMd, { color: colors.onPrimary }]}>Nouvelle session</Text>
+            </Pressable>
+
+            {loadingSessions ? (
+              <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
+            ) : sessions.length === 0 ? (
+              <View style={{ alignItems: 'center', marginTop: 48, gap: 8 }}>
+                <Ionicons name="chatbubbles-outline" size={48} color={colors.outline} />
+                <Text style={[type.bodyMd, { color: colors.outline }]}>Aucune session</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={sessions}
+                keyExtractor={(s) => String(s.id)}
+                contentContainerStyle={{ paddingVertical: 12, gap: 8 }}
+                renderItem={({ item: session }) => {
+                  const isActive = sessionId === session.id;
+                  const date = new Date(session.created_at);
+                  const dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                  return (
+                    <Pressable
+                      onPress={() => switchSession(session)}
+                      onLongPress={() => deleteSession(session)}
+                      style={[
+                        styles.sessionItem,
+                        {
+                          backgroundColor: isActive ? colors.primaryFixed : colors.surfaceContainerLowest,
+                          borderColor: isActive ? colors.primary : colors.surfaceVariant,
+                        },
+                      ]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[type.bodyMd, { color: isActive ? colors.primary : colors.onSurface }]}
+                          numberOfLines={1}
+                        >
+                          {session.title}
+                        </Text>
+                        <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>{dateStr}</Text>
+                      </View>
+                      <Pressable
+                        onPress={() => deleteSession(session)}
+                        hitSlop={8}
+                        accessibilityLabel={`Supprimer ${session.title}`}
+                      >
+                        <Ionicons name="trash-outline" size={18} color={colors.error} />
+                      </Pressable>
+                    </Pressable>
+                  );
+                }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8 },
   bubble: { maxWidth: '85%', padding: 16, borderRadius: 20 },
   techniqueChip: {
     flexDirection: 'row',
@@ -239,5 +413,40 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    flex: 1,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    paddingHorizontal: spacing.containerMobile,
+    paddingBottom: 32,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  newSessionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: radius.full,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  sessionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: radius.md,
+    borderWidth: 1,
   },
 });

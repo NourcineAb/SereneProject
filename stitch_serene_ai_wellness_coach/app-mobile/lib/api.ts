@@ -287,6 +287,13 @@ export const api = {
   listSessions: () => request<Session[]>("/chat/sessions"),
   sessionMessages: (id: number) =>
     request<Message[]>(`/chat/sessions/${id}/messages`),
+  sessionRename: (id: number, title: string) =>
+    request<Session>(`/chat/sessions/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ title }),
+    }),
+  sessionDelete: (id: number) =>
+    request<void>(`/chat/sessions/${id}`, { method: "DELETE" }),
   journalList: (date?: string) =>
     request<JournalEntry[]>(`/journal${date ? `?date=${date}` : ""}`),
   journalCreate: (mood_score: number, content: string, technique?: string) =>

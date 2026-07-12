@@ -89,6 +89,11 @@ async def handle_chat(
         db.add(session)
         await db.flush()
         used += 1  # this new session counts toward the weekly tally
+        # Auto-generate a short title from the first message
+        short = message.strip()[:80]
+        if len(message.strip()) > 80:
+            short = short.rsplit(" ", 1)[0] + "..."
+        session.title = short
     else:
         session = (await db.execute(
             select(Session).where(Session.id == session_id, Session.user_id == user.id)
