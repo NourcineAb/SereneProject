@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..models import Challenge, User, UserChallenge
-from ..schemas import ChallengeOut, UserChallengeOut
+from ..models import Challenge, Session, User, UserChallenge
+from ..schemas import ChallengeOut, CommunityStatsOut, UserChallengeOut
 
 router = APIRouter(prefix="/community", tags=["community"])
 
@@ -120,6 +120,27 @@ async def join_challenge(
     return uc
 
 
+@router.post("/challenges/{challenge_id}/leave", status_code=204)
+async def leave_challenge(
+    challenge_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    uc = (
+        await db.execute(
+            select(UserChallenge).where(
+                UserChallenge.user_id == user.id,
+                UserChallenge.challenge_id == challenge_id,
+                UserChallenge.completed == False,  # noqa: E712
+            )
+        )
+    ).scalar_one_or_none()
+    if not uc:
+        raise HTTPException(404, "Active challenge participation not found")
+    await db.delete(uc)
+    await db.commit()
+
+
 @router.get("/challenges/my", response_model=list[UserChallengeOut])
 async def my_challenges(
     user: User = Depends(get_current_user),
@@ -170,6 +191,23 @@ async def my_challenges(
     return result
 
 
+@router.get("/stats", response_model=CommunityStatsOut)
+async def community_stats(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> CommunityStatsOut:
+    """Aggregated, anonymised community statistics shown on the community screen."""
+    active_users = (await db.execute(select(func.count(User.id)))).scalar_one()
+    total_sessions = (await db.execute(select(func.count(Session.id)))).scalar_one()
+    # Approximate "shared calm hours": ~6 minutes of coaching per session.
+    calm_hours = int(total_sessions * 6 / 60)
+    return CommunityStatsOut(
+        active_users=active_users,
+        total_sessions=total_sessions,
+        calm_hours=calm_hours,
+    )
+
+
 @router.post("/challenges/{challenge_id}/progress", response_model=UserChallengeOut)
 async def update_progress(
     challenge_id: int,
@@ -195,8 +233,24 @@ async def update_progress(
         raise HTTPException(404, "Challenge not found")
 
     uc.current_sessions += 1
-    if uc.current_sessions > uc.current_streak:
-        uc.current_streak = uc.current_sessions
+
+    today = datetime.now(timezone.utc).date()
+    yesterday = today - timedelta(days=1)
+    last_session_date = (await db.execute(
+        select(Session.created_at)
+        .where(Session.user_id == user.id)
+        .order_by(Session.created_at.desc())
+        .limit(1)
+    )).scalar_one_or_none()
+
+    if last_session_date:
+        last_date = last_session_date.date() if last_session_date.tzinfo else last_session_date
+        if last_date == yesterday:
+            uc.current_streak += 1
+        elif last_date != today:
+            uc.current_streak = 1
+    else:
+        uc.current_streak = 1
 
     completed = False
     if challenge.target_sessions > 0 and uc.current_sessions >= challenge.target_sessions:

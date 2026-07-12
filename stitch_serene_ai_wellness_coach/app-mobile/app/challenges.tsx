@@ -9,11 +9,13 @@ import {
   getChallenges,
   getMyChallenges,
   joinChallenge,
+  updateChallengeProgress,
 } from '../lib/community';
 import { Card, PillButton } from '../components/ui';
 import { useI18n } from '../lib/i18n';
 import { useColors, useType } from '../lib/theme-provider';
 import { radius, spacing } from '../theme/serene';
+import { api } from '../lib/api';
 
 const CHALLENGE_ICONS: Record<number, string> = {
   1: 'flame-outline',
@@ -79,6 +81,24 @@ export default function ChallengesScreen() {
       Alert.alert(t('settings.errorTitle'), t('error.joinChallenge'));
     } finally {
       setJoiningId(null);
+    }
+  };
+
+  const handleLeave = async (challengeId: number) => {
+    try {
+      await api.communityLeaveChallenge(challengeId);
+      await loadData();
+    } catch {
+      Alert.alert(t('settings.errorTitle'), 'Impossible de quitter le défi.');
+    }
+  };
+
+  const handleProgress = async (challengeId: number) => {
+    try {
+      await updateChallengeProgress(challengeId);
+      await loadData();
+    } catch {
+      /* ignore */
     }
   };
 
@@ -160,6 +180,20 @@ export default function ChallengesScreen() {
                   <Text style={[type.labelSm, { color: colors.onSurfaceVariant }]}>
                     {uc.current_sessions}/{ch.target_sessions} sessions
                   </Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                    <PillButton
+                      label="Progresser"
+                      variant="tonal"
+                      onPress={() => handleProgress(ch.id)}
+                      style={{ flex: 1 }}
+                    />
+                    <PillButton
+                      label="Quitter"
+                      variant="outline"
+                      onPress={() => handleLeave(ch.id)}
+                      style={{ flex: 1 }}
+                    />
+                  </View>
                 </View>
               )}
               {!joined && (

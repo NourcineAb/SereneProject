@@ -34,7 +34,15 @@ app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_list,
+    allow_origins=[
+        "http://localhost:8082",
+        "http://localhost:8081",
+        "http://localhost:19006",
+        "http://localhost:8002",
+        "http://192.168.100.137:8082",
+        "http://192.168.100.137:8081",
+        "http://192.168.100.137:8002",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

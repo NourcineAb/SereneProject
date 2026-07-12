@@ -2,6 +2,9 @@
 freemium gate and crisis safety rule, calls the LLM and persists messages."""
 from __future__ import annotations
 
+import asyncio
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +18,8 @@ from ..prompts import (
 )
 from . import llm, progress, push
 from .moderation import moderate_message
+
+logger = logging.getLogger("serene.coach")
 
 HISTORY_LIMIT = 20  # messages of context sent to the model
 
@@ -126,8 +131,14 @@ async def handle_chat(
 
     # ── Fire-and-forget: send streak milestone push notification.
     if streak_days > 0:
-        import asyncio
-        asyncio.create_task(push.send_streak_milestone(db, user, streak_days))
+        async def _safe_send_streak():
+            try:
+                from ..database import SessionLocal
+                async with SessionLocal() as new_db:
+                    await push.send_streak_milestone(new_db, user, streak_days)
+            except Exception:
+                logger.warning("Failed to send streak milestone push", exc_info=True)
+        asyncio.create_task(_safe_send_streak())
 
     return {
         "session_id": session.id,

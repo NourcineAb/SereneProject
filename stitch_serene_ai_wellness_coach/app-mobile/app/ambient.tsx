@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Animated,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio, AVPlaybackStatus } from 'expo-av';
 import { useAuth } from '../lib/auth';
 import { Card } from '../components/ui';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -17,19 +19,19 @@ import { radius, softGlow, spacing } from '../theme/serene';
 
 type SoundId = 'rain' | 'ocean' | 'forest' | 'wind' | 'fire' | 'stream';
 
-const SOUNDS: { id: SoundId; name: string; icon: string; duration: string }[] = [
-  { id: 'rain', name: 'Pluie', icon: 'rainy-outline', duration: '10 min' },
-  { id: 'ocean', name: 'Océan', icon: 'water-outline', duration: '15 min' },
-  { id: 'forest', name: 'Forêt', icon: 'leaf-outline', duration: '10 min' },
-  { id: 'wind', name: 'Vent', icon: 'airplane-outline', duration: '10 min' },
-  { id: 'fire', name: 'Feu de cheminée', icon: 'flame-outline', duration: '10 min' },
-  { id: 'stream', name: 'Ruisseau', icon: 'water', duration: '10 min' },
+const SOUNDS: { id: SoundId; name: string; icon: string; duration: string; uri: string }[] = [
+  { id: 'rain', name: 'Pluie', icon: 'rainy-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/10/14/audio_33f66fb5e0.mp3' },
+  { id: 'ocean', name: 'Océan', icon: 'water-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/08/02/audio_878a4e0588.mp3' },
+  { id: 'forest', name: 'Forêt', icon: 'leaf-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2024/11/04/audio_6114388368.mp3' },
+  { id: 'wind', name: 'Vent', icon: 'airplane-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/10/30/audio_4a27e99874.mp3' },
+  { id: 'fire', name: 'Feu de cheminée', icon: 'flame-outline', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/11/22/audio_b1ec0a390c.mp3' },
+  { id: 'stream', name: 'Ruisseau', icon: 'water', duration: '∞', uri: 'https://cdn.pixabay.com/audio/2022/08/02/audio_2da579e594.mp3' },
 ];
 
 const SLEEP_STORIES = [
-  { id: 's1', name: 'Le lac paisible', duration: '15 min', icon: 'moon-outline' },
-  { id: 's2', name: 'La forêt enchantée', duration: '20 min', icon: 'star-outline' },
-  { id: 's3', name: 'Les étoiles filantes', duration: '12 min', icon: 'sparkles-outline' },
+  { id: 's1', name: 'Le lac paisible', duration: '15 min', icon: 'moon-outline', uri: '' },
+  { id: 's2', name: 'La forêt enchantée', duration: '20 min', icon: 'star-outline', uri: '' },
+  { id: 's3', name: 'Les étoiles filantes', duration: '12 min', icon: 'sparkles-outline', uri: '' },
 ];
 
 const TIMER_OPTIONS = [
@@ -70,15 +72,58 @@ export default function AmbientScreen() {
   const [timerMinutes, setTimerMinutes] = useState<number | null>(null);
   const [showTimerPicker, setShowTimerPicker] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      soundRef.current?.unloadAsync().catch(() => {});
     };
   }, []);
 
-  const togglePlay = (id: string) => {
+  const stopSound = useCallback(async () => {
+    if (soundRef.current) {
+      try {
+        await soundRef.current.stopAsync();
+        await soundRef.current.unloadAsync();
+      } catch {}
+      soundRef.current = null;
+    }
+    setIsLoaded(false);
+  }, []);
+
+  const playSound = useCallback(async (id: string) => {
+    await stopSound();
+
+    const soundDef = SOUNDS.find((s) => s.id === id);
+    const storyDef = SLEEP_STORIES.find((s) => s.id === id);
+    const uri = soundDef?.uri || storyDef?.uri;
+    if (!uri) return;
+
+    try {
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+      const { sound } = await Audio.Sound.createAsync(
+        { uri },
+        { isLooping: true, volume, shouldPlay: true },
+      );
+      soundRef.current = sound;
+      setIsLoaded(true);
+
+      sound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
+        if (status.isLoaded && status.didJustFinish && !status.isLooping) {
+          setPlayingId(null);
+          setIsLoaded(false);
+        }
+      });
+    } catch {
+      setPlayingId(null);
+    }
+  }, [volume, stopSound]);
+
+  const togglePlay = useCallback(async (id: string) => {
     if (playingId === id) {
+      await stopSound();
       setPlayingId(null);
       if (timerRef.current) {
         clearTimeout(timerRef.current);
@@ -86,15 +131,23 @@ export default function AmbientScreen() {
       }
     } else {
       setPlayingId(id);
+      await playSound(id);
     }
-  };
+  }, [playingId, stopSound, playSound]);
+
+  useEffect(() => {
+    if (soundRef.current && isLoaded) {
+      soundRef.current.setVolumeAsync(volume).catch(() => {});
+    }
+  }, [volume, isLoaded]);
 
   const selectTimer = (minutes: number) => {
     setTimerMinutes(minutes);
     setShowTimerPicker(false);
     if (timerRef.current) clearTimeout(timerRef.current);
     if (playingId) {
-      timerRef.current = setTimeout(() => {
+      timerRef.current = setTimeout(async () => {
+        await stopSound();
         setPlayingId(null);
         setTimerMinutes(null);
       }, minutes * 60 * 1000);
@@ -227,7 +280,7 @@ export default function AmbientScreen() {
                 return (
                   <Pressable
                     key={story.id}
-                    onPress={() => togglePlay(story.id)}
+                    onPress={() => story.uri && togglePlay(story.uri)}
                     accessibilityLabel={`Écouter ${story.name}`}
                     accessibilityRole="button"
                   >

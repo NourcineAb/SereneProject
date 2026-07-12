@@ -26,6 +26,13 @@ class RefreshIn(BaseModel):
     refresh_token: str
 
 
+class SocialLoginIn(BaseModel):
+    provider: str  # "apple" | "google"
+    token: str
+    email: EmailStr
+    name: str = "Friend"
+
+
 class UserOut(BaseModel):
     id: int
     email: EmailStr
@@ -34,6 +41,15 @@ class UserOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UpdateProfileIn(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=6)
 
 
 class UserExportOut(BaseModel):
@@ -168,3 +184,9 @@ class UserChallengeOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CommunityStatsOut(BaseModel):
+    active_users: int
+    total_sessions: int
+    calm_hours: int

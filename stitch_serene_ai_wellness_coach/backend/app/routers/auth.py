@@ -13,15 +13,19 @@ from ..deps import get_current_user
 from ..limiter import limiter
 from ..models import MoodLog, PasswordReset, Session, User, EmailVerification
 from ..schemas import (
+    ChangePasswordIn,
     LoginIn,
     RefreshIn,
     RegisterIn,
     RequestPasswordResetIn,
     ResetPasswordIn,
+    SocialLoginIn,
     Token,
+    UpdateProfileIn,
     UserExportOut,
     UserOut,
 )
+from ..services.email import send_email
 from ..security import (
     create_access_token,
     create_refresh_token,
@@ -57,6 +61,32 @@ async def register(
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    return _make_token_pair(user)
+
+
+@router.post("/social-login", response_model=Token, status_code=201)
+async def social_login(
+    body: Annotated[SocialLoginIn, Body()],
+    db: AsyncSession = Depends(get_db),
+):
+    """Sign in / sign up via Apple or Google.
+
+    The mobile client performs the OAuth flow and forwards the identity
+    provider's token together with the verified email. We find-or-create the
+    user by email and issue our own JWT pair. Social accounts are treated as
+    pre-verified (no password).
+    """
+    user = (await db.execute(select(User).where(User.email == body.email))).scalar_one_or_none()
+    if not user:
+        user = User(
+            email=body.email,
+            name=body.name or "Friend",
+            hashed_password="",  # social accounts have no local password
+            email_verified=True,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
     return _make_token_pair(user)
 
 
@@ -99,6 +129,36 @@ async def logout(user: User = Depends(get_current_user), db: AsyncSession = Depe
 @router.get("/me", response_model=UserOut)
 async def me(user: User = Depends(get_current_user)):
     return user
+
+
+@router.put("/me", response_model=UserOut)
+async def update_me(
+    body: UpdateProfileIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user.name = body.name
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@router.put("/password", status_code=200)
+async def change_password(
+    body: ChangePasswordIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(body.current_password, user.hashed_password):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
+    if body.current_password == body.new_password:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "New password must be different")
+    user.hashed_password = hash_password(body.new_password)
+    user.token_version = (user.token_version or 0) + 1
+    db.add(user)
+    await db.commit()
+    return {"message": "Password changed successfully"}
 
 
 @router.get("/me/export", response_model=UserExportOut)
@@ -197,7 +257,20 @@ async def request_password_reset(
         db.add(PasswordReset(user_id=user.id, token=reset_token))
         await db.commit()
 
-        # In production, send an email here. For dev, log the token.
+        # Deliver the reset link (sent if SMTP is configured, else logged).
+        link = f"{settings.app_base_url}/forgot-password?token={reset_token}"
+        await send_email(
+            to=body.email,
+            subject="Réinitialisez votre mot de passe Serene",
+            html=(
+                "<p>Bonjour,</p>"
+                "<p>Une demande de réinitialisation de mot de passe a été effectuée "
+                "pour votre compte Serene.</p>"
+                f'<p><a href="{link}">Réinitialiser mon mot de passe</a></p>'
+                f"<p>Si le bouton ne fonctionne pas, utilisez ce code : <b>{reset_token}</b></p>"
+                "<p>Ce lien expire dans 1 heure.</p>"
+            ),
+        )
         logger.info("Password reset token for %s: %s", body.email, reset_token)
 
     # Always return 202 regardless of whether the email exists.
@@ -275,7 +348,20 @@ async def request_email_verification(
     db.add(EmailVerification(user_id=user.id, token=verify_token))
     await db.commit()
 
-    # In production, send an email here. For dev, log the token.
+    # Deliver the verification link (sent if SMTP is configured, else logged).
+    link = f"{settings.app_base_url}/verify-email?token={verify_token}"
+    await send_email(
+        to=user.email,
+        subject="Vérifiez votre adresse email Serene",
+        html=(
+            "<p>Bonjour,</p>"
+            "<p>Merci de rejoindre Serene. Veuillez confirmer votre adresse email "
+            "pour sécuriser votre compte.</p>"
+            f'<p><a href="{link}">Vérifier mon email</a></p>'
+            f"<p>Si le bouton ne fonctionne pas, utilisez ce code : <b>{verify_token}</b></p>"
+            "<p>Ce lien expire dans 24 heures.</p>"
+        ),
+    )
     logger.info("Email verification token for %s: %s", user.email, verify_token)
 
     return {"message": "Verification link sent"}

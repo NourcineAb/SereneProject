@@ -17,6 +17,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useI18n } from '../../lib/i18n';
 import { useColors, useType } from '../../lib/theme-provider';
+import { getMyChallenges, updateChallengeProgress } from '../../lib/community';
 import { AdBanner } from '../../components/AdBanner';
 import { radius, softGlow, spacing } from '../../theme/serene';
 
@@ -80,6 +81,15 @@ export default function Chat() {
         ...m,
         { id: `a${Date.now()}`, role: 'assistant', content: res.reply, technique: res.technique },
       ]);
+      // Update challenge progress for all active challenges
+      try {
+        const myChallenges = await getMyChallenges();
+        await Promise.all(
+          myChallenges
+            .filter((uc) => !uc.completed)
+            .map((uc) => updateChallengeProgress(uc.challenge_id)),
+        );
+      } catch {}
     } catch (e: any) {
       setMessages((m) => [
         ...m,

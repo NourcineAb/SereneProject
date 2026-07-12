@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { api } from '../lib/api';
 import { useTheme } from '../lib/theme-provider';
 import { PillButton } from '../components/ui';
 
@@ -62,14 +63,13 @@ export default function ChangePassword() {
 
     setBusy(true);
     try {
-      // Mock: simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await api.changePassword(currentPassword, newPassword);
       setSuccess(true);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch {
-      setError('Une erreur est survenue. Veuillez réessayer.');
+    } catch (e: any) {
+      setError(e.message || 'Une erreur est survenue. Veuillez réessayer.');
     } finally {
       setBusy(false);
     }

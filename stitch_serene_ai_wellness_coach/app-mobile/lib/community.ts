@@ -58,3 +58,30 @@ export async function checkChallengeCompletion(challengeId: number): Promise<boo
     return false;
   }
 }
+
+export type CommunityStats = {
+  active_users: number;
+  total_sessions: number;
+  calm_hours: number;
+};
+
+const STATS_KEY = 'serene.community.stats';
+
+export async function getCommunityStats(): Promise<CommunityStats | null> {
+  try {
+    const data = await api.communityStats();
+    try {
+      await AsyncStorage.setItem(STATS_KEY, JSON.stringify(data));
+    } catch {
+      /* ignore */
+    }
+    return data;
+  } catch {
+    try {
+      const raw = await AsyncStorage.getItem(STATS_KEY);
+      return raw ? (JSON.parse(raw) as CommunityStats) : null;
+    } catch {
+      return null;
+    }
+  }
+}

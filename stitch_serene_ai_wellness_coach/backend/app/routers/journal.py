@@ -30,6 +30,46 @@ async def create_entry(
     return entry
 
 
+@router.put("/{entry_id}", response_model=JournalEntryOut)
+async def update_entry(
+    entry_id: int,
+    body: JournalEntryIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    entry = (
+        await db.execute(
+            select(JournalEntry).where(JournalEntry.id == entry_id, JournalEntry.user_id == user.id)
+        )
+    ).scalar_one_or_none()
+    if not entry:
+        raise HTTPException(404, "Journal entry not found")
+    entry.mood_score = body.mood_score
+    entry.content = body.content
+    entry.technique = body.technique
+    db.add(entry)
+    await db.commit()
+    await db.refresh(entry)
+    return entry
+
+
+@router.delete("/{entry_id}", status_code=204)
+async def delete_entry(
+    entry_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    entry = (
+        await db.execute(
+            select(JournalEntry).where(JournalEntry.id == entry_id, JournalEntry.user_id == user.id)
+        )
+    ).scalar_one_or_none()
+    if not entry:
+        raise HTTPException(404, "Journal entry not found")
+    await db.delete(entry)
+    await db.commit()
+
+
 @router.get("", response_model=list[JournalEntryOut])
 async def list_entries(
     date: str | None = Query(None, description="Filter by date YYYY-MM-DD"),
