@@ -17,10 +17,10 @@ npx claude-flow agent status --id <agent-id>
 
 ## Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--id` | Agent ID (alternative to positional arg) | Required |
-| `--format` | Output format (table, json) | table |
+| Option     | Description                              | Default  |
+| ---------- | ---------------------------------------- | -------- |
+| `--id`     | Agent ID (alternative to positional arg) | Required |
+| `--format` | Output format (table, json)              | table    |
 
 ## Examples
 
@@ -64,12 +64,14 @@ Metrics
 The status command provides:
 
 ### Basic Info
+
 - Agent ID and type
 - Current status (active/idle/terminated)
 - Creation timestamp
 - Last activity timestamp
 
 ### Performance Metrics
+
 - Tasks completed successfully
 - Tasks currently in progress
 - Failed task count
@@ -77,6 +79,7 @@ The status command provides:
 - Total uptime
 
 ### Configuration (when applicable)
+
 - Provider and model
 - Timeout settings
 - Auto-tools enabled
@@ -102,7 +105,7 @@ The status command provides:
     "tasksInProgress": 1,
     "tasksFailed": 0,
     "averageExecutionTime": 245.5,
-    "uptime": 918000
+    "uptime": 918081
   }
 }
 ```

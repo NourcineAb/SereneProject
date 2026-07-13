@@ -16,11 +16,11 @@
  *   3. Configure the plugin in app.json (already done with test IDs).
  */
 
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
 
 /** Parsed monetization mode from env. Defaults to 'iap'. */
-export const MONETIZATION: 'iap' | 'ads' | 'both' =
-  (process.env.EXPO_PUBLIC_MONETIZATION as 'iap' | 'ads' | 'both') || 'iap';
+export const MONETIZATION: "iap" | "ads" | "both" =
+  (process.env.EXPO_PUBLIC_MONETIZATION as "iap" | "ads" | "both") || "iap";
 
 // ---------------------------------------------------------------------------
 // Optional native module loader — mirrors the purchases.ts pattern exactly.
@@ -36,7 +36,7 @@ function getAdsModule(): AdsModule | null {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     // react-native-google-mobile-ads is an optional peer dep; module may not exist
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    _adsModule = require('react-native-google-mobile-ads');
+    _adsModule = require("react-native-google-mobile-ads");
   } catch {
     _adsModule = null;
   }
@@ -53,8 +53,8 @@ function getAdsModule(): AdsModule | null {
  * - Not running on web
  */
 export function adsEnabled(): boolean {
-  if (Platform.OS === 'web') return false;
-  if (MONETIZATION === 'iap') return false;
+  if (Platform.OS === "web") return false;
+  if (MONETIZATION === "iap") return false;
   return getAdsModule() !== null;
 }
 
@@ -82,7 +82,7 @@ export function getBannerUnitId(): string {
   if (envId) return envId;
   const mod = getAdsModule();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  return mod?.TestIds?.BANNER ?? 'ca-app-pub-3940256099942544/6300978111';
+  return mod?.TestIds?.BANNER ?? "ca-app-pub-3940256099942544/6300978111";
 }
 
 /**
@@ -94,7 +94,7 @@ export function getInterstitialUnitId(): string {
   if (envId) return envId;
   const mod = getAdsModule();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  return mod?.TestIds?.INTERSTITIAL ?? 'ca-app-pub-3940256099942544/1033173712';
+  return mod?.TestIds?.INTERSTITIAL ?? "ca-app-pub-3940256099942544/1033173712";
 }
 
 /**
@@ -124,16 +124,16 @@ export async function showInterstitial(): Promise<void> {
       };
       // Resolve on close or error — never block the caller indefinitely.
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      interstitial.addAdEventListener('closed', done);
+      interstitial.addAdEventListener("closed", done);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      interstitial.addAdEventListener('error', done);
+      interstitial.addAdEventListener("error", done);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      interstitial.addAdEventListener('loaded', () => {
+      interstitial.addAdEventListener("loaded", () => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
         interstitial.show().catch(done);
       });
       // Safety timeout: resolve after 8 s even if the ad never loads.
-      setTimeout(done, 8000);
+      setTimeout(done, 8081);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       interstitial.load();
     });

@@ -136,7 +136,10 @@ export default function Chat() {
     } else {
       setDeletingId(session.id);
       setDeleteError(null);
-      setTimeout(() => { if (deletingId === session.id) setDeletingId(null); }, 3000);
+      const id = session.id;
+      setTimeout(() => {
+        setDeletingId((current) => (current === id ? null : current));
+      }, 3000);
     }
   }, [sessionId, deletingId]);
 
@@ -311,7 +314,7 @@ export default function Chat() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background, paddingTop: insets.top + 16 }]}>
             <View style={styles.modalHeader}>
-              <Text style={[type.headlineMd, { color: colors.primary }]}>Sessions</Text>
+              <Text style={[type.headlineLg, { color: colors.primary }]}>Sessions</Text>
               <Pressable onPress={() => setShowHistory(false)} hitSlop={12}>
                 <Ionicons name="close" size={24} color={colors.outline} />
               </Pressable>
@@ -384,7 +387,7 @@ export default function Chat() {
                         <Ionicons
                           name={deletingId === session.id ? 'checkmark' : 'trash-outline'}
                           size={18}
-                          color={deletingId === session.id ? colors.onError : colors.error}
+                          color={deletingId === session.id ? colors.onErrorContainer : colors.error}
                         />
                       </Pressable>
                     </View>

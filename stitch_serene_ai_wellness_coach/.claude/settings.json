@@ -66,7 +66,7 @@
           {
             "type": "command",
             "command": "sh -c 'D=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$D/.claude/helpers/auto-memory-hook.mjs\" ] || D=\"${HOME}\"; exec node \"$D/.claude/helpers/auto-memory-hook.mjs\" import'",
-            "timeout": 8000
+            "timeout": 8081
           }
         ]
       }
@@ -168,10 +168,7 @@
       "Bash(node .claude/*)",
       "mcp__claude-flow__:*"
     ],
-    "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)"
-    ]
+    "deny": ["Read(./.env)", "Read(./.env.*)"]
   },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
@@ -236,11 +233,7 @@
     },
     "daemon": {
       "autoStart": false,
-      "workers": [
-        "map",
-        "audit",
-        "optimize"
-      ],
+      "workers": ["map", "audit", "optimize"],
       "schedules": {
         "audit": {
           "interval": "4h",
@@ -255,11 +248,7 @@
     "learning": {
       "enabled": true,
       "autoTrain": true,
-      "patterns": [
-        "coordination",
-        "optimization",
-        "prediction"
-      ],
+      "patterns": ["coordination", "optimization", "prediction"],
       "retention": {
         "shortTerm": "24h",
         "longTerm": "30d"

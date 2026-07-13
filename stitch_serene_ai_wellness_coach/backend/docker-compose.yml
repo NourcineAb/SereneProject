@@ -21,12 +21,12 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://serene:serene@db:5432/serene
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "${API_PORT:-8081}:8081"
     depends_on:
       db:
         condition: service_healthy
     # Hot-reload for local dev; remove --reload for production image.
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8081 --reload
     volumes:
       - ./app:/app/app
 

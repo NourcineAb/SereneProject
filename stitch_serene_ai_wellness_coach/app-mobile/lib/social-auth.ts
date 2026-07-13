@@ -1,11 +1,26 @@
 import { Platform, Alert } from 'react-native';
+import { useEffect, useRef, useCallback } from 'react';
+import * as WebBrowser from 'expo-web-browser';
+import { useIdTokenAuthRequest } from 'expo-auth-session/providers/google';
+import type { AuthSessionResult } from 'expo-auth-session';
 import { api, setToken, setRefreshToken } from './api';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_WEB_CLIENT_ID = '138307752321-nqsfcrj9b03050ri77chij99gn2omnir.apps.googleusercontent.com';
+const GOOGLE_IOS_CLIENT_ID = '138307752321-2950shqa1moav11q3usskosj325psgkf';
+const GOOGLE_ANDROID_CLIENT_ID = '138307752321-gp32eksta19nkemf7ld7r9mivpfu74pa.apps.googleusercontent.com';
 
 type SocialResult = {
   email: string;
   name: string;
   token: string;
 } | null;
+
+type GoogleAuthResult = {
+  requestReady: boolean;
+  promptAsync: () => Promise<SocialResult>;
+};
 
 let AppleAuth: any = null;
 let appleAuthLoaded = false;
@@ -21,20 +36,6 @@ async function loadAppleAuth() {
   return AppleAuth;
 }
 
-let GoogleAuth: any = null;
-let googleAuthLoaded = false;
-
-async function loadGoogleAuth() {
-  if (googleAuthLoaded) return GoogleAuth;
-  googleAuthLoaded = true;
-  try {
-    GoogleAuth = require('expo-google-sign-in');
-  } catch {
-    GoogleAuth = null;
-  }
-  return GoogleAuth;
-}
-
 export async function isAppleAvailable(): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;
   const mod = await loadAppleAuth();
@@ -46,17 +47,82 @@ export async function isAppleAvailable(): Promise<boolean> {
   }
 }
 
-export async function isGoogleAvailable(): Promise<boolean> {
-  const mod = await loadGoogleAuth();
-  return mod !== null;
-}
-
 function showUnavailable(provider: string) {
   Alert.alert(
     'Connexion sociale indisponible',
     `La connexion avec ${provider} n'est pas disponible dans cet environnement.`,
     [{ text: 'OK' }],
   );
+}
+
+async function handleGoogleResult(response: AuthSessionResult): Promise<SocialResult> {
+  if (response.type !== 'success') return null;
+
+  try {
+    const authentication = (response as any).authentication;
+    const accessToken = authentication?.accessToken ?? response.params?.access_token;
+    const idToken = authentication?.idToken ?? response.params?.id_token;
+    const token = idToken ?? accessToken;
+
+    if (!token) return null;
+
+    const userInfoResponse = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const userInfo = await userInfoResponse.json();
+
+    const email = userInfo.email ?? '';
+    const name = userInfo.name ?? 'Utilisateur Google';
+
+    const data = await api.socialLogin('google', token, email, name);
+    await setToken(data.access_token);
+    if (data.refresh_token) await setRefreshToken(data.refresh_token);
+    return { email, name, token: data.access_token };
+  } catch {
+    Alert.alert(
+      'Erreur de connexion',
+      'Impossible de se connecter avec Google. Veuillez réessayer.',
+      [{ text: 'OK' }],
+    );
+    return null;
+  }
+}
+
+export function useGoogleAuth(): GoogleAuthResult {
+  const [request, response, promptAsync] = useIdTokenAuthRequest({
+    clientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    scopes: ['openid', 'profile', 'email'],
+  });
+
+  const resultRef = useRef<SocialResult>(null);
+
+  useEffect(() => {
+    if (response) {
+      handleGoogleResult(response).then((r) => {
+        resultRef.current = r;
+      });
+    }
+  }, [response]);
+
+  const signIn = useCallback(async (): Promise<SocialResult> => {
+    if (!request) {
+      showUnavailable('Google');
+      return null;
+    }
+    try {
+      const authResult = await promptAsync();
+      if (authResult.type !== 'success') return null;
+      return await handleGoogleResult(authResult);
+    } catch {
+      showUnavailable('Google');
+      return null;
+    }
+  }, [request, promptAsync]);
+
+  return { requestReady: request !== null, promptAsync: signIn };
 }
 
 export async function signInWithApple(): Promise<SocialResult> {
@@ -82,56 +148,13 @@ export async function signInWithApple(): Promise<SocialResult> {
       ? `${credential.fullName.givenName ?? ''} ${credential.fullName.familyName ?? ''}`.trim()
       : 'Utilisateur Apple';
 
-    const response = await socialLogin('apple', credential.identityToken, email, name);
-    return response;
-  } catch (err: any) {
-    if (err.code === 'ERR_REQUEST_CANCELED') return null;
-    showUnavailable('Apple');
-    return null;
-  }
-}
-
-export async function signInWithGoogle(): Promise<SocialResult> {
-  const mod = await loadGoogleAuth();
-  if (!mod) {
-    showUnavailable('Google');
-    return null;
-  }
-
-  try {
-    await mod.initAsync({
-      scopes: ['profile', 'email'],
-    });
-
-    const result = await mod.signInAsync();
-    if (result.type !== 'success') return null;
-
-    const { email, name } = result.user;
-    const response = await socialLogin('google', result.authentication.idToken ?? result.authentication.accessToken, email, name);
-    return response;
-  } catch {
-    showUnavailable('Google');
-    return null;
-  }
-}
-
-async function socialLogin(
-  provider: string,
-  token: string,
-  email: string,
-  name: string,
-): Promise<SocialResult> {
-  try {
-    const data = await api.socialLogin(provider, token, email, name);
+    const data = await api.socialLogin('apple', credential.identityToken, email, name);
     await setToken(data.access_token);
     if (data.refresh_token) await setRefreshToken(data.refresh_token);
     return { email, name, token: data.access_token };
-  } catch {
-    Alert.alert(
-      'Erreur de connexion',
-      `Impossible de se connecter avec ${provider}. Veuillez réessayer.`,
-      [{ text: 'OK' }],
-    );
+  } catch (err: any) {
+    if (err.code === 'ERR_REQUEST_CANCELED') return null;
+    showUnavailable('Apple');
     return null;
   }
 }

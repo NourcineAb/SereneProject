@@ -37,9 +37,9 @@ services:
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-meta-llama/llama-3.3-70b-instruct:free}
       MONETIZATION_MODE: ${MONETIZATION_MODE:-iap}
       REVENUECAT_WEBHOOK_SECRET: ${REVENUECAT_WEBHOOK_SECRET:-}
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8081
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "${API_PORT:-8081}:8081"
     depends_on:
       db:
         condition: service_healthy

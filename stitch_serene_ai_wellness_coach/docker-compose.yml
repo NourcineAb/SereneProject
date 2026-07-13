@@ -21,7 +21,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://serene:serene@db:5432/serene
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "${API_PORT:-8081}:8081"
     depends_on:
       db:
         condition: service_healthy
@@ -31,7 +31,7 @@ services:
     build:
       context: ./app-mobile
       args:
-        EXPO_PUBLIC_API_URL: ${MOBILE_API_URL:-http://localhost:${API_PORT:-8000}}
+        EXPO_PUBLIC_API_URL: ${MOBILE_API_URL:-http://localhost:${API_PORT:-8081}}
     ports:
       - "${WEB_PORT:-19006}:80"
     depends_on:

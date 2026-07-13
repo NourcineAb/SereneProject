@@ -95,7 +95,7 @@ Returns JSON with:
 ```json
 {
   "taskId": "auth-implementation",
-  "duration": 1800000,
+  "duration": 1808100,
   "tokensUsed": 45000,
   "filesModified": 12,
   "performanceScore": 0.92,

@@ -16,7 +16,7 @@ import { useColors, useType } from '../lib/theme-provider';
 import { useI18n } from '../lib/i18n';
 import { PillButton } from '../components/ui';
 import { radius, spacing } from '../theme/serene';
-import { isAppleAvailable, signInWithApple, signInWithGoogle } from '../lib/social-auth';
+import { isAppleAvailable, signInWithApple, useGoogleAuth } from '../lib/social-auth';
 
 export default function Login() {
   const { signIn, signUp } = useAuth();
@@ -30,6 +30,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [appleEnabled, setAppleEnabled] = useState(false);
+  const { requestReady: googleReady, promptAsync: googleSignIn } = useGoogleAuth();
   const [socialBusy, setSocialBusy] = useState(false);
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export default function Login() {
     setError(null);
     setSocialBusy(true);
     try {
-      const result = await signInWithGoogle();
+      const result = await googleSignIn();
       if (result) router.replace('/(tabs)');
     } catch (e: any) {
       setError(e.message ?? t('error.generic'));
@@ -172,7 +173,7 @@ export default function Login() {
 
       <Pressable
         onPress={handleGoogleLogin}
-        disabled={socialBusy}
+        disabled={socialBusy || !googleReady}
         accessibilityRole="button"
         accessibilityLabel={t('auth.googleSignIn')}
         style={({ pressed }) => [

@@ -69,6 +69,16 @@ class Settings(BaseSettings):
     # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     field_encryption_key: str = ""
 
+    # Email / SMTP delivery. Left empty in development — emails are logged instead
+    # of sent. Set these (e.g. via Mailgun/SendGrid SMTP or a local relay) so
+    # password-reset and email-verification links are actually delivered.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_pass: str = ""
+    email_from: str = "Serene <no-reply@serene.app>"
+    app_base_url: str = "http://localhost:8081"
+
     @property
     def cors_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

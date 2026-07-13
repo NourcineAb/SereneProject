@@ -19,26 +19,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Run Alembic migrations to bring the schema up to date.
+    """Create all tables from the declarative models.
 
-    Falls back to create_all when Alembic is unavailable (e.g. in tests
-    that use an in-memory SQLite engine).
+    Uses ``Base.metadata.create_all`` via the async engine so there is no
+    conflict with a running event loop.  For production migrations, run
+    ``alembic upgrade head`` **before** starting the server.
     """
     # Import models so they register on Base.metadata.
     from . import models  # noqa: F401
 
-    try:
-        from alembic.config import Config
-        from alembic import command
-
-        alembic_cfg = Config("alembic.ini")
-        # Override the URL to use the async engine's URL.
-        alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
-
-        # Run migrations in offline mode to generate SQL, then apply.
-        # For async engines we use the env.py which handles async directly.
-        command.upgrade(alembic_cfg, "head")
-    except Exception:
-        # Fallback for tests / dev: create tables directly.
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

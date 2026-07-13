@@ -60,8 +60,8 @@
         {
           "android": {
             "minSdkVersion": 24,
-            "targetSdkVersion": 34,
-            "compileSdkVersion": 34,
+            "targetSdkVersion": 36,
+            "compileSdkVersion": 36,
             "usesCleartextTraffic": true
           }
         }
@@ -72,7 +72,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "0623d8fb-c85c-4fc0-b28f-7efefd55b2f8"
+        "projectId": "e8d725cf-2481-4750-8bf0-dc61f7b6e436"
       }
     }
   }

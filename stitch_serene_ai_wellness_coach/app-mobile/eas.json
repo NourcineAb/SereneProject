@@ -1,20 +1,22 @@
 {
-  "cli": { "version": ">= 5.0.0", "appVersionSource": "remote" },
+  "cli": {
+    "version": ">= 7.0.0",
+    "appVersionSource": "local"
+  },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "http://localhost:8000" }
+      "ios": { "simulator": true }
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "http://api.serene.com:8000" }
+      "ios": { "simulator": true },
+      "android": { "buildType": "apk" }
     },
-    "production": {
-      "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://api.serene.example" }
-    }
+    "production": {}
   },
-  "submit": { "production": {} }
+  "submit": {
+    "production": {}
+  }
 }

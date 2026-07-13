@@ -1,7 +1,23 @@
 /** Thin typed client for the Serene FastAPI backend. */
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
-const BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8081";
+function resolveBaseUrl(): string {
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (envUrl) return envUrl;
+
+  // In Expo Go dev mode, derive the host from the dev server address.
+  const debuggerHost =
+    Constants.expoConfig?.hostUri ?? (Constants.manifest as any)?.debuggerHost;
+  if (debuggerHost) {
+    const host = debuggerHost.split(":")[0];
+    return `http://${host}:8000`;
+  }
+
+  return "http://localhost:8000";
+}
+
+const BASE = resolveBaseUrl();
 const TOKEN_KEY = "serene.token";
 const REFRESH_KEY = "serene.refresh_token";
 
@@ -180,7 +196,7 @@ export type WeeklySummary = {
 };
 
 export type ExportData = {
-  profile: Record<string, unknown>;
+  profile: { name: string; email: string; [key: string]: unknown };
   sessions: Array<{
     id: number;
     title: string;

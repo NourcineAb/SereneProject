@@ -5,15 +5,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
-import { getChallenges, ChallengeData } from '../lib/community';
+import { getChallenges, getCommunityStats, CommunityStats, ChallengeData } from '../lib/community';
 import { Card, PillButton } from '../components/ui';
 import { useColors, useType } from '../lib/theme-provider';
 import { radius, spacing } from '../theme/serene';
 
-const MOCK_STATS = {
+const MOCK_STATS: CommunityStats = {
   active_users: 12847,
   total_sessions: 98234,
-  shared_calm_hours: 15672,
+  calm_hours: 15672,
 };
 
 export default function CommunityScreen() {
@@ -23,6 +23,7 @@ export default function CommunityScreen() {
   const { user } = useAuth();
   const { t } = useI18n();
   const [challenges, setChallenges] = useState<ChallengeData[]>([]);
+  const [stats, setStats] = useState<CommunityStats>(MOCK_STATS);
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
@@ -32,6 +33,11 @@ export default function CommunityScreen() {
       getChallenges()
         .then((ch) => {
           if (active) setChallenges(ch);
+        })
+        .catch(() => {});
+      getCommunityStats()
+        .then((s) => {
+          if (active && s) setStats(s);
         })
         .catch(() => {})
         .finally(() => {
@@ -113,7 +119,7 @@ export default function CommunityScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[type.bodyMd, { color: colors.onSurface }]}>
-              {t('community.activeUsers', { count: MOCK_STATS.active_users.toLocaleString() })}
+              {t('community.activeUsers', { count: stats.active_users.toLocaleString() })}
             </Text>
           </View>
         </View>
@@ -123,7 +129,7 @@ export default function CommunityScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[type.bodyMd, { color: colors.onSurface }]}>
-              {t('community.totalSessions', { count: MOCK_STATS.total_sessions.toLocaleString() })}
+              {t('community.totalSessions', { count: stats.total_sessions.toLocaleString() })}
             </Text>
           </View>
         </View>
@@ -133,7 +139,7 @@ export default function CommunityScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[type.bodyMd, { color: colors.onSurface }]}>
-              {t('community.calmHours', { count: MOCK_STATS.shared_calm_hours.toLocaleString() })}
+              {t('community.calmHours', { count: stats.calm_hours.toLocaleString() })}
             </Text>
           </View>
         </View>
