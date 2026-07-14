@@ -157,6 +157,16 @@ export type ChatResponse = {
   paywall: boolean;
   sessions_used: number;
   sessions_limit: number;
+  suggested_exercises: ExerciseSuggestion[];
+  exercise_stats: Record<string, number>;
+};
+export type ExerciseSuggestion = {
+  id: string;
+  name: string;
+  icon: string;
+  route: string;
+  duration: string;
+  description: string;
 };
 export type Progress = {
   streak_days: number;
@@ -315,6 +325,11 @@ export const api = {
     }),
   sessionDelete: (id: number) =>
     request<void>(`/chat/sessions/${id}`, { method: "DELETE" }),
+  exerciseComplete: (exercise_id: string) =>
+    request<{ ok: boolean }>("/chat/exercise-complete", {
+      method: "POST",
+      body: JSON.stringify({ exercise_id }),
+    }),
   journalList: (date?: string) =>
     request<JournalEntry[]>(`/journal${date ? `?date=${date}` : ""}`),
   journalCreate: (mood_score: number, content: string, technique?: string) =>

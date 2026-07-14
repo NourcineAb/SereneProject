@@ -14,9 +14,9 @@ function getTechniqueColors(colors: any): Record<string, string> {
     box_breathing: colors.primary,
     grounding_54321: colors.primaryFixedDim,
     pmr: colors.secondary,
-    reframing: '#484744',
-    meditation: '#2d6a4f',
-    journaling: '#a39270',
+    reframing: colors.tertiary,
+    meditation: colors.primaryContainer,
+    journaling: colors.secondaryContainer,
   };
 }
 

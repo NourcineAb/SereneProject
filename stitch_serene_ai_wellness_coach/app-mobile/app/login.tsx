@@ -162,12 +162,13 @@ export default function Login() {
           style={({ pressed }) => [
             styles.socialBtn,
             styles.appleBtn,
+            { backgroundColor: colors.surfaceContainerHighest },
             pressed && { opacity: 0.7 },
             socialBusy && { opacity: 0.5 },
           ]}
         >
-          <Ionicons name="logo-apple" size={22} color="#000000" />
-          <Text style={[styles.appleBtnText, { fontFamily: type.titleMd.fontFamily }]}>{t('auth.appleSignIn')}</Text>
+          <Ionicons name="logo-apple" size={22} color={colors.onSurface} />
+          <Text style={[styles.appleBtnText, { color: colors.onSurface, fontFamily: type.titleMd.fontFamily }]}>{t('auth.appleSignIn')}</Text>
         </Pressable>
       )}
 

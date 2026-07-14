@@ -18,7 +18,7 @@ function getMoodColors(colors: any): Record<string, string> {
     joyeux: colors.primaryFixedDim,
     neutre: colors.secondary,
     anxieux: colors.outline,
-    fatigue: '#a39270',
+    fatigue: colors.secondary,
   };
 }
 

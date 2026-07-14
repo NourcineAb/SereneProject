@@ -1,0 +1,36 @@
+{
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/cron.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/cron/(.*)",
+      "dest": "api/cron.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/daily-checkin",
+      "schedule": "0 18 * * *"
+    }
+  ],
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 30
+    },
+    "api/cron.py": {
+      "maxDuration": 60
+    }
+  }
+}

@@ -20,14 +20,6 @@ const PHASES: { key: Phase; label: string; seconds: number; scale: number }[] = 
   { key: 'retiens2', label: 'Retenez...', seconds: 2, scale: 0.85 },
 ];
 
-const BG_COLORS = [
-  '#e8fff1',
-  '#e2f5e8',
-  '#ddf3e5',
-  '#d7eee0',
-  '#e8fff1',
-];
-
 function formatCountdown(seconds: number) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -37,6 +29,15 @@ function formatCountdown(seconds: number) {
 export default function Meditation() {
   const colors = useColors();
   const type = useType();
+  // Breathing background gradient — derived from theme tokens so it follows
+  // light/dark mode (was previously hardcoded surface hex values).
+  const bgColors = [
+    colors.surfaceContainerLowest,
+    colors.surfaceContainerLow,
+    colors.surfaceContainer,
+    colors.surfaceContainerHigh,
+    colors.background,
+  ];
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [duration, setDuration] = useState<Duration>(5);
@@ -56,11 +57,11 @@ export default function Meditation() {
 
   useEffect(() => {
     if (!isPremium) return;
-    const loop = Animated.loop(
-      Animated.sequence(
-        BG_COLORS.map((_, i) =>
-          Animated.timing(bgAnim, {
-            toValue: i / (BG_COLORS.length - 1),
+        const loop = Animated.loop(
+          Animated.sequence(
+            bgColors.map((_, i) =>
+              Animated.timing(bgAnim, {
+                toValue: i / (bgColors.length - 1),
             duration: 4000,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: false,
@@ -139,8 +140,8 @@ export default function Meditation() {
   }, [started, completed, duration]);
 
   const bgColor = bgAnim.interpolate({
-    inputRange: BG_COLORS.map((_, i) => i / (BG_COLORS.length - 1)),
-    outputRange: BG_COLORS,
+    inputRange: bgColors.map((_, i) => i / (bgColors.length - 1)),
+    outputRange: bgColors,
   });
 
   if (!isPremium) {

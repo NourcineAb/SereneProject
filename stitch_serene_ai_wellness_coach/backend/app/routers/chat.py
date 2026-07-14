@@ -10,7 +10,7 @@ from ..config import settings
 from ..database import get_db
 from ..deps import get_current_user
 from ..limiter import limiter
-from ..models import Message, Session, User
+from ..models import ExerciseCompletion, Message, Session, User
 from ..schemas import ChatIn, ChatOut, MessageOut, SessionOut
 from ..services import coach
 from ..services.llm import LLMError
@@ -94,5 +94,20 @@ async def delete_session(
     if not session:
         raise HTTPException(404, "Session not found")
     await db.delete(session)
+    await db.commit()
+    return {"ok": True}
+
+
+class ExerciseCompletionIn(BaseModel):
+    exercise_id: str = Field(min_length=1, max_length=64)
+
+
+@router.post("/exercise-complete")
+async def record_exercise_completion(
+    body: ExerciseCompletionIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    db.add(ExerciseCompletion(user_id=user.id, exercise_id=body.exercise_id))
     await db.commit()
     return {"ok": True}

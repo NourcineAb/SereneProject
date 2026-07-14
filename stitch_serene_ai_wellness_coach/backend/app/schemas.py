@@ -82,6 +82,17 @@ class ChatOut(BaseModel):
     paywall: bool = False
     sessions_used: int
     sessions_limit: int
+    suggested_exercises: list["ExerciseSuggestion"] = []
+    exercise_stats: dict[str, int] = {}  # exercise_id -> completion count
+
+
+class ExerciseSuggestion(BaseModel):
+    id: str
+    name: str
+    icon: str
+    route: str
+    duration: str
+    description: str
 
 
 # ─── Mood ──────────────────────────────────────────────────────────────────

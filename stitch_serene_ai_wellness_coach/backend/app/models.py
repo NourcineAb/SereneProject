@@ -40,6 +40,9 @@ class User(Base):
     email_verifications: Mapped[list["EmailVerification"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    exercise_completions: Mapped[list["ExerciseCompletion"]] = relationship(
+        cascade="all, delete-orphan"
+    )
 
 
 class Session(Base):
@@ -159,3 +162,14 @@ class UserChallenge(Base):
 
     user: Mapped["User"] = relationship()
     challenge: Mapped["Challenge"] = relationship(back_populates="user_challenges")
+
+
+class ExerciseCompletion(Base):
+    """Records each time a user completes an exercise (breathing, grounding, etc.)."""
+
+    __tablename__ = "exercise_completions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    exercise_id: Mapped[str] = mapped_column(String(64), index=True)  # e.g. "square-breathing"
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

@@ -6,6 +6,7 @@ configured provider so a missing key never kills the wellness flow.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import httpx
@@ -106,6 +107,23 @@ def _to_openai_messages(system: str, history: list[dict]) -> list[dict]:
     return [{"role": "system", "content": system}, *history]
 
 
+# Curated list of *free* OpenRouter models (no credits required), ordered by
+# chat quality. OpenRouter's free tier is often *transiently* rate-limited
+# upstream per-model, so we fail over across this list. These are general
+# instruction-tuned chat models (no chain-of-thought leakage). The configured
+# model is always tried first.
+_OPENROUTER_FREE_MODELS = (
+    "google/gemma-4-26b-a4b-it:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free",
+    "openrouter/free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+    "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+)
+
+
 async def _call_openrouter(system: str, history: list[dict]) -> str:
     if not settings.openrouter_api_key:
         raise LLMError("OPENROUTER_API_KEY not set")
@@ -114,25 +132,40 @@ async def _call_openrouter(system: str, history: list[dict]) -> str:
         "HTTP-Referer": "https://serene.app",
         "X-Title": "Serene Wellness Coach",
     }
-    payload = {
-        "model": settings.openrouter_model,
-        "messages": _to_openai_messages(system, history),
-        "max_tokens": 512,
-        "temperature": 0.7,
-    }
+    messages = _to_openai_messages(system, history)
+    candidates = [settings.openrouter_model] + [
+        m for m in _OPENROUTER_FREE_MODELS if m != settings.openrouter_model
+    ]
+    last_err = None
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        r = await client.post(OPENROUTER_URL, headers=headers, json=payload)
-        if r.status_code == 401:
-            raise LLMError("OpenRouter 401: invalid API key")
-        if r.status_code == 429:
-            raise LLMError("OpenRouter 429: rate limit / free tier busy")
-        if r.status_code >= 400:
-            raise LLMError(f"OpenRouter {r.status_code}: {r.text[:500]}")
-        data = r.json()
-    try:
-        return data["choices"][0]["message"]["content"].strip()
-    except (KeyError, IndexError) as e:
-        raise LLMError(f"OpenRouter unexpected response: {data}") from e
+        for model in candidates:
+            payload = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": 512,
+                "temperature": 0.7,
+            }
+            # One immediate try + a single short retry on a transient 429, then
+            # fail over to the next free model (faster than retrying one model).
+            for attempt in range(2):
+                r = await client.post(OPENROUTER_URL, headers=headers, json=payload)
+                if r.status_code == 401:
+                    raise LLMError("OpenRouter 401: invalid API key")
+                if r.status_code == 429 and attempt == 0:
+                    await asyncio.sleep(1.5)
+                    continue
+                if r.status_code == 429:
+                    last_err = f"OpenRouter 429 on {model}"
+                    break
+                if r.status_code >= 400:
+                    last_err = f"OpenRouter {r.status_code} on {model}: {r.text[:200]}"
+                    break
+                data = r.json()
+                try:
+                    return data["choices"][0]["message"]["content"].strip()
+                except (KeyError, IndexError) as e:
+                    raise LLMError(f"OpenRouter unexpected response: {data}") from e
+    raise LLMError(last_err or "OpenRouter: all free models rate-limited")
 
 
 async def _call_gemini(system: str, history: list[dict]) -> str:

@@ -45,12 +45,23 @@ async def register_push_token(
 # ─── Push delivery ───────────────────────────────────────────────────────────
 
 @router.post("/push/daily-checkin")
-async def trigger_daily_checkin(db: AsyncSession = Depends(get_db)) -> dict:
+async def trigger_daily_checkin(
+    db: AsyncSession = Depends(get_db),
+    authorization: str | None = Header(default=None),
+) -> dict:
     """Trigger daily check-in reminders for all eligible users.
 
-    This endpoint is meant to be called by a cron job (e.g. every day at 18:00).
-    In production, protect it with a shared secret or internal-only network rule.
+    Protected by the ``CRON_SECRET`` shared secret.  Vercel Cron injects this
+    as ``Authorization: Bearer <token>``.  Manual callers must do the same.
     """
+    secret = settings.cron_secret
+    if secret:
+        token = (authorization or "").replace("Bearer ", "").strip()
+        if token != secret:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid cron secret")
+    else:
+        logger.warning("/push/daily-checkin called without CRON_SECRET configured — allowing in dev")
+
     sent = await push.send_daily_checkin_reminder(db)
     return {"status": "ok", "sent": sent}
 

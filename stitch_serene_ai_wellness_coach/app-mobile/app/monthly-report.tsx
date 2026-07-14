@@ -79,7 +79,7 @@ function ChangeIndicator({ value, label }: { value: number; label: string }) {
   const colors = useColors();
   const type = useType();
   const isPositive = value > 0;
-  const color = isPositive ? '#2d6a4f' : value < 0 ? '#ba1a1a' : colors.outline;
+  const color = isPositive ? colors.primaryContainer : value < 0 ? colors.error : colors.outline;
   const icon = isPositive ? 'trending-up' : value < 0 ? 'trending-down' : 'remove';
   return (
     <View style={styles.changeRow}>

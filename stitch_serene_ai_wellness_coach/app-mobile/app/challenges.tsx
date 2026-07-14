@@ -25,20 +25,21 @@ const CHALLENGE_ICONS: Record<number, string> = {
   5: 'rocket-outline',
 };
 
-const CHALLENGE_COLORS: Record<number, string> = {
-  1: '#e76f51',
-  2: '#2a9d8f',
-  3: '#264653',
-  4: '#e9c46a',
-  5: '#f4a261',
-};
-
 function getIcon(challengeId: number): string {
   return CHALLENGE_ICONS[challengeId] ?? 'star-outline';
 }
 
+// Difficulty colors derived from theme tokens (no hardcoded values) so they
+// follow light/dark mode consistently.
 function getColor(challengeId: number, colors: any): string {
-  return CHALLENGE_COLORS[challengeId] ?? colors.primary;
+  const map: Record<number, string> = {
+    1: colors.primary,
+    2: colors.secondary,
+    3: colors.tertiary,
+    4: colors.primaryContainer,
+    5: colors.error,
+  };
+  return map[challengeId] ?? colors.primary;
 }
 
 export default function ChallengesScreen() {

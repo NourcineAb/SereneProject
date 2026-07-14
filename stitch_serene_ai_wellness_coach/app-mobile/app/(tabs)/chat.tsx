@@ -14,7 +14,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { api, Session } from '../../lib/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api, ExerciseSuggestion, Session } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useI18n } from '../../lib/i18n';
 import { useColors, useType } from '../../lib/theme-provider';
@@ -22,7 +23,14 @@ import { getMyChallenges, updateChallengeProgress } from '../../lib/community';
 import { AdBanner } from '../../components/AdBanner';
 import { radius, softGlow, spacing } from '../../theme/serene';
 
-type Msg = { id: string; role: 'user' | 'assistant'; content: string; technique?: string | null };
+type Msg = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  technique?: string | null;
+  exercises?: ExerciseSuggestion[];
+  exerciseStats?: Record<string, number>;
+};
 
 const TECHNIQUE_ROUTES: Record<string, string> = {
   box_breathing: '/breathing',

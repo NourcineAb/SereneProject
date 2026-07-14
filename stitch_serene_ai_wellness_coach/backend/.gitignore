@@ -13,3 +13,5 @@ venv/
 *.db-shm
 *.db-wal
 *.db
+
+.vercel

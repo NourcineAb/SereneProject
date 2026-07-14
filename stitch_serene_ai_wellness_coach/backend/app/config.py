@@ -1,7 +1,14 @@
+import os
 from functools import lru_cache
 
 from pydantic import ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Resolve .env relative to THIS file (backend/.env) so the settings load
+# correctly no matter what the current working directory is at launch time
+# (uvicorn from repo root, Vercel serverless at /var/task, tests, etc.).
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_ENV_FILE = os.path.join(_BACKEND_DIR, ".env")
 
 _WEAK_SECRETS = {
     "",
@@ -20,7 +27,7 @@ def _env_bool(value, default: bool = False) -> bool:
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
 
     # "development" | "production". In production a weak JWT secret refuses to boot.
     environment: str = "development"
@@ -78,6 +85,10 @@ class Settings(BaseSettings):
     smtp_pass: str = ""
     email_from: str = "Serene <no-reply@serene.app>"
     app_base_url: str = "http://localhost:8081"
+
+    # Vercel Cron — shared secret for authenticating cron-triggered endpoints.
+    # Set CRON_SECRET in Vercel dashboard; Vercel injects it as a Bearer token.
+    cron_secret: str = ""
 
     @property
     def cors_list(self) -> list[str]:

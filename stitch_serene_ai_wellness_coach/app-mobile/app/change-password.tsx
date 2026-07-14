@@ -34,7 +34,7 @@ export default function ChangePassword() {
     if (/[^a-zA-Z0-9]/.test(pw)) score++;
 
     if (score <= 1) return { score, label: 'Faible', color: t.colors.error };
-    if (score <= 3) return { score, label: 'Moyen', color: '#e6a817' };
+    if (score <= 3) return { score, label: 'Moyen', color: t.colors.secondary };
     return { score, label: 'Fort', color: t.colors.primary };
   };
 
