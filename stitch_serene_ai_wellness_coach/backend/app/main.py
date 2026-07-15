@@ -54,6 +54,11 @@ app.include_router(report.router)
 app.include_router(community.router)
 
 
+@app.get("/", tags=["meta"])
+async def root():
+    return {"message": "API is running"}
+
+
 @app.get("/health", tags=["meta"])
 async def health():
     return {
