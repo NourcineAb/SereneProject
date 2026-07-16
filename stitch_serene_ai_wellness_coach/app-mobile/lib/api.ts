@@ -3,6 +3,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 
 function resolveBaseUrl(): string {
+  // Runtime override (set in dist/config.js served alongside the web build).
+  // This lets the backend URL be changed WITHOUT rebuilding the frontend.
+  const runtimeUrl =
+    (typeof window !== "undefined"
+      ? (window as any).__SERENE_API_URL__
+      : undefined) as string | undefined;
+  if (runtimeUrl) return runtimeUrl;
+
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
   if (envUrl) return envUrl;
 
