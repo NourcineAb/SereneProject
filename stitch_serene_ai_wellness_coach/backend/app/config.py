@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     allow_mock_billing: bool = True
 
     # CORS
-    cors_origins: str = "*"
+    cors_origins: str = "https://nourcineabsereneproject-bud97d04q-nourcine123s-projects.vercel.app,https://nourcineabsereneproject-fp5fhk6p2-nourcine123s-projects.vercel.app"
 
     # Rate limiting — requests per window. Set high or disable in test env.
     rate_limit_login: str = "5/minute"

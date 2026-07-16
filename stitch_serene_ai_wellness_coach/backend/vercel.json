@@ -1,12 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/api/cron/:path*",
-      "destination": "/api/cron.py"
+      "source": "/api/cron/(.*)",
+      "destination": "/api/cron"
     },
     {
-      "source": "/((?!api/).*)",
-      "destination": "/api/index.py"
+      "source": "/(.*)",
+      "destination": "/api/index"
     }
   ],
   "crons": [

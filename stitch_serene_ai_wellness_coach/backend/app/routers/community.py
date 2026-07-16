@@ -12,6 +12,39 @@ from ..schemas import ChallengeOut, CommunityStatsOut, UserChallengeOut
 router = APIRouter(prefix="/community", tags=["community"])
 
 
+async def _build_user_challenge_out(db: AsyncSession, uc: UserChallenge) -> UserChallengeOut:
+    challenge = (
+        await db.execute(select(Challenge).where(Challenge.id == uc.challenge_id))
+    ).scalar_one_or_none()
+    ch_out = None
+    if challenge:
+        participant_count = (
+            await db.execute(
+                select(func.count(UserChallenge.id)).where(UserChallenge.challenge_id == challenge.id)
+            )
+        ).scalar_one()
+        ch_out = ChallengeOut(
+            id=challenge.id,
+            title=challenge.title,
+            description=challenge.description,
+            duration_days=challenge.duration_days,
+            target_sessions=challenge.target_sessions,
+            target_streak=challenge.target_streak,
+            created_at=challenge.created_at,
+            participant_count=participant_count,
+        )
+    return UserChallengeOut(
+        id=uc.id,
+        challenge_id=uc.challenge_id,
+        started_at=uc.started_at,
+        completed=uc.completed,
+        completed_at=uc.completed_at,
+        current_sessions=uc.current_sessions,
+        current_streak=uc.current_streak,
+        challenge=ch_out,
+    )
+
+
 async def _seed_challenges(db: AsyncSession) -> None:
     """Insert default challenges if the table is empty."""
     count = (await db.execute(select(func.count(Challenge.id)))).scalar_one()
@@ -117,7 +150,7 @@ async def join_challenge(
     db.add(uc)
     await db.commit()
     await db.refresh(uc)
-    return uc
+    return await _build_user_challenge_out(db, uc)
 
 
 @router.post("/challenges/{challenge_id}/leave", status_code=204)
@@ -156,38 +189,7 @@ async def my_challenges(
 
     result: list[UserChallengeOut] = []
     for uc in rows:
-        challenge = (
-            await db.execute(select(Challenge).where(Challenge.id == uc.challenge_id))
-        ).scalar_one_or_none()
-        ch_out = None
-        if challenge:
-            participant_count = (
-                await db.execute(
-                    select(func.count(UserChallenge.id)).where(UserChallenge.challenge_id == challenge.id)
-                )
-            ).scalar_one()
-            ch_out = ChallengeOut(
-                id=challenge.id,
-                title=challenge.title,
-                description=challenge.description,
-                duration_days=challenge.duration_days,
-                target_sessions=challenge.target_sessions,
-                target_streak=challenge.target_streak,
-                created_at=challenge.created_at,
-                participant_count=participant_count,
-            )
-        result.append(
-            UserChallengeOut(
-                id=uc.id,
-                challenge_id=uc.challenge_id,
-                started_at=uc.started_at,
-                completed=uc.completed,
-                completed_at=uc.completed_at,
-                current_sessions=uc.current_sessions,
-                current_streak=uc.current_streak,
-                challenge=ch_out,
-            )
-        )
+        result.append(await _build_user_challenge_out(db, uc))
     return result
 
 
@@ -264,35 +266,4 @@ async def update_progress(
 
     await db.commit()
     await db.refresh(uc)
-
-    challenge = (
-        await db.execute(select(Challenge).where(Challenge.id == uc.challenge_id))
-    ).scalar_one_or_none()
-    ch_out = None
-    if challenge:
-        participant_count = (
-            await db.execute(
-                select(func.count(UserChallenge.id)).where(UserChallenge.challenge_id == challenge.id)
-            )
-        ).scalar_one()
-        ch_out = ChallengeOut(
-            id=challenge.id,
-            title=challenge.title,
-            description=challenge.description,
-            duration_days=challenge.duration_days,
-            target_sessions=challenge.target_sessions,
-            target_streak=challenge.target_streak,
-            created_at=challenge.created_at,
-            participant_count=participant_count,
-        )
-
-    return UserChallengeOut(
-        id=uc.id,
-        challenge_id=uc.challenge_id,
-        started_at=uc.started_at,
-        completed=uc.completed,
-        completed_at=uc.completed_at,
-        current_sessions=uc.current_sessions,
-        current_streak=uc.current_streak,
-        challenge=ch_out,
-    )
+    return await _build_user_challenge_out(db, uc)
