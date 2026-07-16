@@ -1,6 +1,7 @@
+import re
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -33,9 +34,26 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
+
+def _cors_allow_origin(origin: str) -> bool:
+    """Return whether a request origin is allowed.
+
+    Permits any configured origin AND any *.vercel.app subdomain (frontend
+    preview deployments get unpredictable random subdomains on every push).
+    """
+    if not origin:
+        return False
+    allowed = settings.cors_list
+    if origin in allowed:
+        return True
+    if re.search(r"\.vercel\.app$", origin):
+        return True
+    return False
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_list,
+    allow_origin_regex=r"https://.*\.vercel\.app$|https://.*\.serene\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
