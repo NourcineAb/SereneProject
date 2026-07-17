@@ -19,6 +19,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(120), default="Friend")
     hashed_password: Mapped[str] = mapped_column(String(255))
     is_premium: Mapped[bool] = mapped_column(default=False)
+    is_admin: Mapped[bool] = mapped_column(default=False)
     email_verified: Mapped[bool] = mapped_column(default=False)
     expo_push_token: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

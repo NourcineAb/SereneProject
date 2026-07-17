@@ -157,6 +157,7 @@ export type User = {
   email: string;
   name: string;
   is_premium: boolean;
+  is_admin?: boolean;
 };
 export type ChatResponse = {
   session_id: number;

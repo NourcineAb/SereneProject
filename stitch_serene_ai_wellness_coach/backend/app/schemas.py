@@ -38,6 +38,7 @@ class UserOut(BaseModel):
     email: EmailStr
     name: str
     is_premium: bool
+    is_admin: bool = False
 
     class Config:
         from_attributes = True

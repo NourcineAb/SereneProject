@@ -28,3 +28,11 @@ async def get_current_user(
     if token_ver != user.token_version:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token has been revoked")
     return user
+
+
+async def get_current_admin_user(
+    user: User = Depends(get_current_user),
+) -> User:
+    if not user.is_admin:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
+    return user
