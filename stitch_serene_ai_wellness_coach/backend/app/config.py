@@ -62,9 +62,12 @@ class Settings(BaseSettings):
     # Dev-only: allow the client-callable /billing/premium mock. MUST be false in prod.
     allow_mock_billing: bool = True
 
-    # CORS
-    cors_origins: str = "https://nourcineabsereneproject-bud97d04q-nourcine123s-projects.vercel.app,https://nourcineabsereneproject-fp5fhk6p2-nourcine123s-projects.vercel.app"
-
+    # CORS — comma-separated origins. Used by CORSMiddleware (allow_origins list).
+    cors_origins: str = (
+        "https://nourcineabsereneproject-3saj9m210-nourcine123s-projects.vercel.app,"
+        "https://nourcineabsereneproject-bud97d04q-nourcine123s-projects.vercel.app,"
+        "https://nourcineabsereneproject-fp5fhk6p2-nourcine123s-projects.vercel.app"
+    )
     # Rate limiting — requests per window. Set high or disable in test env.
     rate_limit_login: str = "5/minute"
     rate_limit_register: str = "3/minute"

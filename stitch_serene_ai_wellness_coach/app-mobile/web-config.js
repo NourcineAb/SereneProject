@@ -1,3 +1,3 @@
 // Runtime API configuration for the Serene web build.
 // Edit __SERENE_API_URL__ and redeploy ONLY this file (no full rebuild needed).
-window.__SERENE_API_URL__ = "https://serene-backend-54daxqvin-nourcine123s-projects.vercel.app";
+window.__SERENE_API_URL__ = "https://serene-backend-qqgb4vmkg-nourcine123s-projects.vercel.app";
