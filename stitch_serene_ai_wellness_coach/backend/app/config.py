@@ -95,7 +95,13 @@ class Settings(BaseSettings):
 
     @property
     def cors_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        base = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        _PROD = {
+            "https://nourcineabsereneproject-3saj9m210-nourcine123s-projects.vercel.app",
+            "https://nourcineabsereneproject-bud97d04q-nourcine123s-projects.vercel.app",
+            "https://nourcineabsereneproject-fp5fhk6p2-nourcine123s-projects.vercel.app",
+        }
+        return list(dict.fromkeys(base + sorted(_PROD - set(base))))
 
     @property
     def is_production(self) -> bool:
