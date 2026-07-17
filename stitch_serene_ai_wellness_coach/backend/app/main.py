@@ -64,4 +64,6 @@ async def health():
         "service": "serene-api",
         "llm_primary": settings.llm_primary,
         "monetization_mode": settings.monetization_mode,
+        "cors_origins": settings.cors_list,
+        "deploy_version": "v2-cors-fix",
     }
