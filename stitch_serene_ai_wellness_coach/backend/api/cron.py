@@ -14,10 +14,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import FastAPI, Header, HTTPException, status  # noqa: E402
 from app.config import settings  # noqa: E402
 
-cron_app = FastAPI(title="Serene Cron")
+app = FastAPI(title="Serene Cron")
 
 
-@cron_app.get("/api/cron/daily-checkin")
+@app.get("/api/cron/daily-checkin")
 async def daily_checkin(authorization: str = Header(default="")):
     """Send daily check-in push reminders to eligible users.
 
