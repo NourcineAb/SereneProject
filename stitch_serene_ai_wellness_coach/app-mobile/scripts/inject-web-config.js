@@ -22,7 +22,7 @@ console.log("Copied web-config.js -> dist/config.js");
 let htmlContent = fs.readFileSync(html, "utf8");
 if (!htmlContent.includes("/config.js")) {
   htmlContent = htmlContent.replace(
-    /(<script src="\/_expo\/static\/js\/web\/[^"]+"><\/script>)/,
+    /(<script\s+src="\/_expo\/static\/js\/web\/[^"]+"[^>]*>)/,
     '<script src="/config.js"></script>\n  $1'
   );
   fs.writeFileSync(html, htmlContent);
