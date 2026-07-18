@@ -1,7 +1,8 @@
-"""LLM provider abstraction — Gemini + OpenRouter + NVIDIA NIM.
+"""LLM provider abstraction — OpenRouter (single provider).
 
-Primary provider is configurable. On any error, it falls back to another
-configured provider so a missing key never kills the wellness flow.
+All chat completions go through OpenRouter's OpenAI-compatible API.
+Automatic fallback across curated free models ensures the wellness flow
+never breaks due to upstream rate limits or outages.
 """
 
 from __future__ import annotations
@@ -93,9 +94,9 @@ async def _demo_generate(system: str, history: list[dict]) -> str:
         reply += f"\n[TECHNIQUE: {technique}]"
     return reply
 
+
 TIMEOUT = httpx.Timeout(60.0, connect=10.0)
 
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
@@ -107,20 +108,13 @@ def _to_openai_messages(system: str, history: list[dict]) -> list[dict]:
     return [{"role": "system", "content": system}, *history]
 
 
-# Curated list of *free* OpenRouter models (no credits required), ordered by
-# chat quality. OpenRouter's free tier is often *transiently* rate-limited
-# upstream per-model, so we fail over across this list. These are general
-# instruction-tuned chat models (no chain-of-thought leakage). The configured
-# model is always tried first.
+# Ordered list of free OpenRouter models. The primary model is always tried
+# first; on failure the next models in this list are tried in order.
+# All three are :free tier — no credits required.
 _OPENROUTER_FREE_MODELS = (
-    "google/gemma-4-26b-a4b-it:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
-    "openrouter/free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "nousresearch/hermes-3-llama-3.1-405b:free",
-    "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
-    "meta-llama/llama-3.2-3b-instruct:free",
-    "nvidia/nemotron-nano-9b-v2:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "poolside/laguna-m.1:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
 )
 
 
@@ -168,90 +162,20 @@ async def _call_openrouter(system: str, history: list[dict]) -> str:
     raise LLMError(last_err or "OpenRouter: all free models rate-limited")
 
 
-async def _call_gemini(system: str, history: list[dict]) -> str:
-    if not settings.gemini_api_key:
-        raise LLMError("GEMINI_API_KEY not set")
-    contents = []
-    for m in history:
-        role = "model" if m["role"] == "assistant" else "user"
-        contents.append({"role": role, "parts": [{"text": m["content"]}]})
-    payload = {
-        "systemInstruction": {"parts": [{"text": system}]},
-        "contents": contents,
-        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 512},
-    }
-    url = GEMINI_URL.format(model=settings.gemini_model)
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        r = await client.post(url, params={"key": settings.gemini_api_key}, json=payload)
-        if r.status_code >= 400:
-            raise LLMError(f"Gemini {r.status_code}: {r.text[:500]}")
-        data = r.json()
-    try:
-        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-    except (KeyError, IndexError) as e:
-        raise LLMError(f"Gemini unexpected response: {data}") from e
-
-
-async def _call_nvidia(system: str, history: list[dict]) -> str:
-    if not settings.nvidia_api_key:
-        raise LLMError("NVIDIA_API_KEY not set")
-    headers = {
-        "Authorization": f"Bearer {settings.nvidia_api_key}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": settings.nvidia_model,
-        "messages": _to_openai_messages(system, history),
-        "max_tokens": 512,
-        "temperature": 0.7,
-    }
-    async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-        r = await client.post(settings.nvidia_base_url, headers=headers, json=payload)
-        if r.status_code == 401:
-            raise LLMError("NVIDIA 401: invalid API key")
-        if r.status_code == 429:
-            raise LLMError("NVIDIA 429: rate limit")
-        if r.status_code >= 400:
-            raise LLMError(f"NVIDIA {r.status_code}: {r.text[:500]}")
-        data = r.json()
-    try:
-        return data["choices"][0]["message"]["content"].strip()
-    except (KeyError, IndexError) as e:
-        raise LLMError(f"NVIDIA unexpected response: {data}") from e
-
-
-_PROVIDERS = {
-    "gemini": _call_gemini,
-    "openrouter": _call_openrouter,
-    "nvidia": _call_nvidia,
-}
-
-
 async def generate(system: str, history: list[dict]) -> str:
-    """Try the configured primary provider, then all fallbacks.
+    """Call OpenRouter with automatic model fallback.
 
-    If no real provider key is configured, fall back to offline demo mode so
+    If no real key is configured, fall back to offline demo mode so
     the chat flow keeps working in development.
     """
-    order = [settings.llm_primary] + [p for p in _PROVIDERS if p != settings.llm_primary]
-    last_err: Exception | None = None
-    # Only fall back over providers that have a *real* key configured (skip
-    # placeholder/template values that would otherwise fail with 401/400).
-    configured = [name for name in order if _is_real_key(getattr(settings, f"{name}_api_key"))]
-    if not configured:
-        logger.warning("No real LLM key configured; using offline demo mode.")
+    if not _is_real_key(settings.openrouter_api_key):
+        logger.warning("No real OpenRouter key configured; using offline demo mode.")
         return await _demo_generate(system, history)
-    for name in configured:
-        try:
-            return await _PROVIDERS[name](system, history)
-        except Exception as e:  # noqa: BLE001
-            last_err = e
-            continue
-    # Every configured provider failed (invalid key, quota, or free-tier busy).
-    # Fall back to the offline demo coach so the chat flow still works instead
-    # of returning a hard 503 to the client.
-    logger.error(
-        "All LLM providers failed (last error: %s); using offline demo mode.",
-        last_err,
-    )
-    return await _demo_generate(system, history)
+    try:
+        return await _call_openrouter(system, history)
+    except Exception as e:  # noqa: BLE001
+        # OpenRouter completely failed — fall back to offline demo coach so
+        # the chat flow still works instead of returning a hard 503 to the
+        # client.
+        logger.error("OpenRouter failed (%s); using offline demo mode.", e)
+        return await _demo_generate(system, history)

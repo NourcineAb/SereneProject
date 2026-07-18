@@ -17,7 +17,7 @@ _WEAK_SECRETS = {
     "dev-only-not-secret-change-me",
 }
 
-_VALID_LLM_PRIMARY = {"gemini", "openrouter", "nvidia"}
+_VALID_LLM_PRIMARY = {"openrouter"}
 
 
 def _env_bool(value, default: bool = False) -> bool:
@@ -41,15 +41,10 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 30   # refresh token lifetime (days)
     access_token_algo: str = "HS256"
 
-    # LLM backend
-    llm_primary: str = "gemini"  # "gemini" | "openrouter" | "nvidia"
-    gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
+    # LLM backend — OpenRouter only
+    llm_primary: str = "openrouter"
     openrouter_api_key: str = ""
-    openrouter_model: str = "meta-llama/llama-3.3-70b-instruct:free"
-    nvidia_api_key: str = ""
-    nvidia_model: str = "stepfun-ai/step-3.7-flash"
-    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1/chat/completions"
+    openrouter_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
     # Freemium / monetization. "iap" | "ads" | "both".
     monetization_mode: str = "iap"
