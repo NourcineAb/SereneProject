@@ -3,6 +3,10 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/assets/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/:font*",
+      "destination": "/assets/assets/fonts/:font*"
+    },
+    {
       "source": "/((?!assets/|_expo/|config\\.js|favicon\\.ico$).*)",
       "destination": "/index.html"
     }
