@@ -13,13 +13,18 @@ Usage — apply EncryptedText as a SQLAlchemy column type:
 """
 from __future__ import annotations
 
+import logging
+
 from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import Text
 from sqlalchemy.engine import Dialect
 from sqlalchemy.types import TypeDecorator
 
+_logger = logging.getLogger("serene.encryption")
+
 # Lazy singleton — created once per process.
 _fernet: Fernet | None = None
+_fernet_failed = False
 
 
 def _has_key() -> bool:
@@ -29,15 +34,26 @@ def _has_key() -> bool:
 
 def _get_fernet() -> Fernet | None:
     """Return the Fernet instance if encryption is configured, else None."""
-    global _fernet
+    global _fernet, _fernet_failed
+    if _fernet_failed:
+        return None
     if not _has_key():
         return None
     if _fernet is not None:
         return _fernet
 
     from .config import settings
-    _fernet = Fernet(settings.field_encryption_key.strip().encode())
-    return _fernet
+    try:
+        _fernet = Fernet(settings.field_encryption_key.strip().encode())
+        return _fernet
+    except (ValueError, Exception) as exc:
+        _fernet_failed = True
+        _logger.error(
+            "FIELD_ENCRYPTION_KEY is invalid (%s) — falling back to plaintext mode. "
+            "Generate a valid key: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"",
+            exc,
+        )
+        return None
 
 
 class EncryptedText(TypeDecorator):
@@ -56,9 +72,13 @@ class EncryptedText(TypeDecorator):
             return None
         fernet = _get_fernet()
         if fernet is None:
-            return value  # dev mode: store plaintext
-        token: bytes = fernet.encrypt(value.encode("utf-8"))
-        return token.decode("ascii")
+            return value  # dev mode or invalid key: store plaintext
+        try:
+            token: bytes = fernet.encrypt(value.encode("utf-8"))
+            return token.decode("ascii")
+        except Exception as exc:
+            _logger.error("Encryption failed, storing plaintext: %s", exc)
+            return value
 
     def process_result_value(self, value: str | None, dialect: Dialect) -> str | None:
         if value is None:
