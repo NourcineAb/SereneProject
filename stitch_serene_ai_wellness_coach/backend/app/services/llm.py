@@ -95,7 +95,7 @@ async def _demo_generate(system: str, history: list[dict]) -> str:
     return reply
 
 
-TIMEOUT = httpx.Timeout(60.0, connect=10.0)
+TIMEOUT = httpx.Timeout(20.0, connect=8.0)
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 

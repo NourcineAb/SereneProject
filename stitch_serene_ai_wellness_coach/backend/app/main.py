@@ -1,13 +1,18 @@
+import logging
+import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from .config import settings
 from .limiter import limiter
+
+_logger = logging.getLogger("serene.main")
 
 
 @asynccontextmanager
@@ -84,6 +89,15 @@ app.include_router(integrations.router)
 app.include_router(report.router)
 app.include_router(community.router)
 app.include_router(admin.router)
+
+
+@app.exception_handler(Exception)
+async def catch_all_exception_handler(request: Request, exc: Exception):
+    _logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {type(exc).__name__}: {str(exc)[:200]}"},
+    )
 
 
 @app.get("/", tags=["meta"])
