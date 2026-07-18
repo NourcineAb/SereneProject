@@ -64,6 +64,7 @@ class Settings(BaseSettings):
 
     # CORS — comma-separated origins. Used by CORSMiddleware (allow_origins list).
     cors_origins: str = (
+        "https://nourcineabsereneproject.vercel.app,"
         "https://nourcineabsereneproject-3saj9m210-nourcine123s-projects.vercel.app,"
         "https://nourcineabsereneproject-bud97d04q-nourcine123s-projects.vercel.app,"
         "https://nourcineabsereneproject-fp5fhk6p2-nourcine123s-projects.vercel.app"
@@ -97,6 +98,7 @@ class Settings(BaseSettings):
     def cors_list(self) -> list[str]:
         base = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
         _PROD = {
+            "https://nourcineabsereneproject.vercel.app",
             "https://nourcineabsereneproject-3saj9m210-nourcine123s-projects.vercel.app",
             "https://nourcineabsereneproject-bud97d04q-nourcine123s-projects.vercel.app",
             "https://nourcineabsereneproject-fp5fhk6p2-nourcine123s-projects.vercel.app",

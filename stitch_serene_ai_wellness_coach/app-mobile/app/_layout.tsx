@@ -5,15 +5,7 @@ import { I18nProvider } from '../lib/i18n';
 import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
-import {
-  useFonts,
-  Quicksand_600SemiBold,
-  Quicksand_700Bold,
-} from '@expo-google-fonts/quicksand';
-import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_600SemiBold,
-} from '@expo-google-fonts/plus-jakarta-sans';
+import { useFonts } from 'expo-font';
 import { AuthProvider } from '../lib/auth';
 import { ThemeProvider, useTheme } from '../lib/theme-provider';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -65,10 +57,11 @@ function ThemedApp() {
 
 export default function RootLayout() {
   const [loaded, fontError] = useFonts({
-    Quicksand_600SemiBold,
-    Quicksand_700Bold,
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_600SemiBold,
+    Quicksand_600SemiBold: require('../assets/fonts/Quicksand_600SemiBold.ttf'),
+    Quicksand_700Bold: require('../assets/fonts/Quicksand_700Bold.ttf'),
+    PlusJakartaSans_400Regular: require('../assets/fonts/PlusJakartaSans_400Regular.ttf'),
+    PlusJakartaSans_600SemiBold: require('../assets/fonts/PlusJakartaSans_600SemiBold.ttf'),
+    Ionicons: require('../assets/fonts/Ionicons.ttf'),
   });
 
   const [fontTimeout, setFontTimeout] = useState(false);
