@@ -18,6 +18,9 @@ _WEAK_SECRETS = {
 }
 
 _VALID_LLM_PRIMARY = {"openrouter"}
+_KNOWN_API_KEY_FIELDS = {
+    "openrouter": "openrouter_api_key",
+}
 
 
 def _env_bool(value, default: bool = False) -> bool:
@@ -117,19 +120,24 @@ class Settings(BaseSettings):
                 raise ValueError("ALLOW_MOCK_BILLING must be false in production.")
             if "*" in self.cors_list:
                 raise ValueError("CORS_ORIGINS must be an explicit allow-list in production.")
-            primary_key = getattr(self, f"{self.llm_primary}_api_key")
-            if not primary_key:
-                raise ValueError(
-                    f"ENVIRONMENT=production requires {self.llm_primary.upper()}_API_KEY to be set."
-                )
+            api_key_field = _KNOWN_API_KEY_FIELDS.get(self.llm_primary)
+            if api_key_field:
+                primary_key = getattr(self, api_key_field, "")
+                if not primary_key:
+                    raise ValueError(
+                        f"ENVIRONMENT=production requires {self.llm_primary.upper()}_API_KEY to be set."
+                    )
             if not self.field_encryption_key:
                 raise ValueError(
                     "ENVIRONMENT=production requires FIELD_ENCRYPTION_KEY to be set. "
                     "Generate: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
                 )
         if self.llm_primary not in _VALID_LLM_PRIMARY:
-            raise ValueError(
-                f"LLM_PRIMARY must be one of {sorted(_VALID_LLM_PRIMARY)}, got {self.llm_primary!r}"
+            import logging as _log
+            _log.getLogger("serene.config").warning(
+                "LLM_PRIMARY=%r is not in known providers %s — "
+                "the chat LLM will fall back to offline demo mode.",
+                self.llm_primary, sorted(_VALID_LLM_PRIMARY),
             )
         return self
 
