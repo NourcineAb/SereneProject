@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View, Platform } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useI18n } from '../lib/i18n';
 import { useColors, useType } from '../lib/theme-provider';
@@ -15,6 +16,7 @@ const LANGUAGES = [
 export default function LanguageScreen() {
   const colors = useColors();
   const type = useType();
+  const insets = useSafeAreaInsets();
   const { language, setLanguage, t } = useI18n();
   const [currentLang, setCurrentLang] = useState(language);
 
@@ -24,7 +26,7 @@ export default function LanguageScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 16 }]}>
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
@@ -90,8 +92,7 @@ export default function LanguageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: spacing.containerMobile,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingHorizontal: spacing.containerMobile,
   },
   header: {
     flexDirection: 'row',

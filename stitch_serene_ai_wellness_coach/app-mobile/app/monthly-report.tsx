@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import {
   Pressable,
   ScrollView,
@@ -123,7 +123,7 @@ export default function MonthlyReportScreen() {
         </Text>
         <Pressable
           style={({ pressed }) => [{ backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: 32, paddingVertical: 16, marginTop: 20 }, softGlow, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
-          onPress={() => {/* navigate to paywall */}}
+          onPress={() => router.push('/paywall')}
         >
           <Text style={[type.titleMd, { color: colors.onPrimary }]}>Découvrir Pro</Text>
         </Pressable>

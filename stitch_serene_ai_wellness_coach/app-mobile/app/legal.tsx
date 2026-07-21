@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../lib/theme-provider';
 import { useI18n } from '../lib/i18n';
@@ -15,11 +16,12 @@ type Tab = 'privacy' | 'terms';
 
 export default function Legal() {
   const { theme: t } = useTheme();
+  const insets = useSafeAreaInsets();
   const { t: tl } = useI18n();
   const [tab, setTab] = useState<Tab>('privacy');
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.colors.background }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ flex: 1, backgroundColor: t.colors.background }} contentContainerStyle={[styles.container, { paddingTop: insets.top + 16 }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel={tl('misc.back')}>
           <Ionicons name="chevron-back" size={28} color={t.colors.primary} />
@@ -223,15 +225,14 @@ const sectionStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
-    paddingTop: 56,
+    paddingHorizontal: 24,
     paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   tabBar: {
     flexDirection: 'row',

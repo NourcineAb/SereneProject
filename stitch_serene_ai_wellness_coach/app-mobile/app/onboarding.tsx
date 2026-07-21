@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import {
   Animated,
@@ -188,12 +188,14 @@ function GoalStep({
 function DoneStep({ colors, t, name, onFinish }: { colors: ReturnType<typeof useColors>; t: (key: string, params?: Record<string, string>) => string; name: string; onFinish: () => void }) {
   const type = useType();
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
-  Animated.spring(scaleAnim, {
-    toValue: 1,
-    friction: 5,
-    tension: 80,
-    useNativeDriver: true,
-  }).start();
+  useEffect(() => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 5,
+      tension: 80,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const doneTitle = name.trim()
     ? t('onboarding.done', { name: name.trim() })

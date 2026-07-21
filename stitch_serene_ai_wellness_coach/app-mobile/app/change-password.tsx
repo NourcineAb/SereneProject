@@ -9,11 +9,13 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../lib/api';
 import { useTheme } from '../lib/theme-provider';
 import { PillButton } from '../components/ui';
 
 export default function ChangePassword() {
+  const insets = useSafeAreaInsets();
   const { theme: t } = useTheme();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -78,7 +80,7 @@ export default function ChangePassword() {
   const strengthBarWidth = Math.max(1, (strength.score / 5) * 100);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.colors.background }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ flex: 1, backgroundColor: t.colors.background }} contentContainerStyle={[styles.container, { paddingTop: insets.top + 16 }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Retour">
           <Ionicons name="chevron-back" size={28} color={t.colors.primary} />
@@ -201,14 +203,13 @@ export default function ChangePassword() {
 const styles = StyleSheet.create({
   container: {
     padding: 24,
-    paddingTop: 56,
     paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 36,
+    marginBottom: 28,
   },
   fields: {},
   inputWrap: {

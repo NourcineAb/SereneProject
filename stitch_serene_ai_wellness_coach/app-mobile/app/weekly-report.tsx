@@ -18,7 +18,7 @@ function getMoodColors(colors: any): Record<string, string> {
     joyeux: colors.primaryFixedDim,
     neutre: colors.secondary,
     anxieux: colors.outline,
-    fatigue: colors.secondary,
+    'fatigué': colors.secondary,
   };
 }
 
@@ -27,7 +27,7 @@ const MOOD_LABELS: Record<string, string> = {
   joyeux: 'Joyeux',
   neutre: 'Neutre',
   anxieux: 'Anxieux',
-  fatigue: 'Fatigu\u00e9',
+  'fatigué': 'Fatigu\u00e9',
 };
 
 function getWeekRange(): string {
@@ -124,7 +124,7 @@ export default function WeeklyReportScreen() {
     );
   }
 
-  const moodDist = data?.mood_distribution ?? { calme: 0, joyeux: 0, neutre: 0, anxieux: 0, fatigue: 0 };
+  const moodDist = data?.mood_distribution ?? { calme: 0, joyeux: 0, neutre: 0, anxieux: 0, 'fatigué': 0 };
   const totalMood = Object.values(moodDist).reduce((a, b) => a + b, 0);
   const sessionsPerDay = data?.sessions_per_day ?? [0, 0, 0, 0, 0, 0, 0];
   const maxSessions = Math.max(1, ...sessionsPerDay);

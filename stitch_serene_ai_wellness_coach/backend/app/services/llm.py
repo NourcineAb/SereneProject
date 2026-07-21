@@ -95,7 +95,7 @@ async def _demo_generate(system: str, history: list[dict]) -> str:
     return reply
 
 
-TIMEOUT = httpx.Timeout(20.0, connect=8.0)
+TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -110,9 +110,13 @@ def _to_openai_messages(system: str, history: list[dict]) -> list[dict]:
 
 # Ordered list of free OpenRouter models. The primary model is always tried
 # first; on failure the next models in this list are tried in order.
-# All three are :free tier — no credits required.
+# All are :free tier — no credits required.
 _OPENROUTER_FREE_MODELS = (
     "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "google/gemma-3-27b-it:free",
+    "meta-llama/llama-4-maverick:free",
+    "deepseek/deepseek-chat-v3-0324:free",
+    "qwen/qwen3-235b-a22b:free",
     "poolside/laguna-m.1:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
 )
@@ -131,8 +135,10 @@ async def _call_openrouter(system: str, history: list[dict]) -> str:
         m for m in _OPENROUTER_FREE_MODELS if m != settings.openrouter_model
     ]
     last_err = None
+    models_tried = []
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         for model in candidates:
+            models_tried.append(model)
             payload = {
                 "model": model,
                 "messages": messages,
@@ -142,24 +148,52 @@ async def _call_openrouter(system: str, history: list[dict]) -> str:
             # One immediate try + a single short retry on a transient 429, then
             # fail over to the next free model (faster than retrying one model).
             for attempt in range(2):
-                r = await client.post(OPENROUTER_URL, headers=headers, json=payload)
+                try:
+                    r = await client.post(OPENROUTER_URL, headers=headers, json=payload)
+                except httpx.TimeoutException:
+                    last_err = f"Timeout on {model} (attempt {attempt + 1})"
+                    logger.warning("LLM timeout on %s (attempt %d)", model, attempt + 1)
+                    if attempt == 0:
+                        await asyncio.sleep(1.0)
+                    continue
+                except httpx.ConnectError as e:
+                    last_err = f"Connection error on {model}: {e}"
+                    logger.warning("LLM connection error on %s: %s", model, e)
+                    break  # Don't retry connection errors
+                except httpx.HTTPError as e:
+                    last_err = f"HTTP error on {model}: {e}"
+                    logger.warning("LLM HTTP error on %s: %s", model, e)
+                    break
+
                 if r.status_code == 401:
                     raise LLMError("OpenRouter 401: invalid API key")
                 if r.status_code == 429 and attempt == 0:
+                    logger.info("LLM rate-limited on %s, retrying in 1.5s", model)
                     await asyncio.sleep(1.5)
                     continue
                 if r.status_code == 429:
-                    last_err = f"OpenRouter 429 on {model}"
+                    last_err = f"Rate limited (429) on {model}"
+                    logger.warning("LLM 429 on %s, failing over to next model", model)
+                    break
+                if r.status_code >= 500:
+                    last_err = f"Server error ({r.status_code}) on {model}"
+                    logger.warning("LLM %d on %s, failing over", r.status_code, model)
                     break
                 if r.status_code >= 400:
-                    last_err = f"OpenRouter {r.status_code} on {model}: {r.text[:200]}"
+                    last_err = f"Client error ({r.status_code}) on {model}: {r.text[:200]}"
+                    logger.warning("LLM %d on %s: %s", r.status_code, model, r.text[:200])
                     break
                 data = r.json()
                 try:
-                    return data["choices"][0]["message"]["content"].strip()
+                    content = data["choices"][0]["message"]["content"].strip()
+                    logger.info("LLM success on model=%s (attempt %d)", model, attempt + 1)
+                    return content
                 except (KeyError, IndexError) as e:
-                    raise LLMError(f"OpenRouter unexpected response: {data}") from e
-    raise LLMError(last_err or "OpenRouter: all free models rate-limited")
+                    last_err = f"Unexpected response from {model}: {data}"
+                    raise LLMError(last_err) from e
+    raise LLMError(
+        last_err or f"OpenRouter: all {len(candidates)} models exhausted"
+    )
 
 
 async def generate(system: str, history: list[dict]) -> str:
@@ -167,6 +201,9 @@ async def generate(system: str, history: list[dict]) -> str:
 
     If no real key is configured, fall back to offline demo mode so
     the chat flow keeps working in development.
+
+    This function NEVER raises — if all OpenRouter models fail, it falls
+    back to the offline demo coach so the chat flow still works.
     """
     if not _is_real_key(settings.openrouter_api_key):
         logger.warning("No real OpenRouter key configured; using offline demo mode.")

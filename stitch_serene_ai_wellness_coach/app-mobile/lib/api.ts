@@ -263,7 +263,7 @@ export type WeeklyReport = {
     joyeux: number;
     neutre: number;
     anxieux: number;
-    fatigue: number;
+    'fatigué': number;
   };
   sessions_per_day: number[];
   technique_usage: Record<string, number>;

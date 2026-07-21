@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -48,13 +48,15 @@ const TECHNIQUE_LABELS: Record<string, string> = {
   journaling: 'Journal réflexif',
 };
 
+const WELCOME_MSG: Msg = { id: 'welcome', role: 'assistant', content: '' };
+
 export default function Chat() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { t } = useI18n();
   const colors = useColors();
   const type = useType();
-  const WELCOME: Msg = { id: 'welcome', role: 'assistant', content: t('chat.welcome') };
+  const WELCOME: Msg = { ...WELCOME_MSG, content: t('chat.welcome') };
   const SUGGESTIONS = [t('chat.workStress'), t('chat.sleep'), t('chat.anxious')];
   const [messages, setMessages] = useState<Msg[]>([WELCOME]);
   const [input, setInput] = useState('');
@@ -68,39 +70,62 @@ export default function Chat() {
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const loadSessions = useCallback(async () => {
     setLoadingSessions(true);
     try {
       const list = await api.listSessions();
       setSessions(list);
-    } catch {}
-    setLoadingSessions(false);
+    } catch (e: any) {
+      console.warn('Failed to load sessions:', e?.message);
+    } finally {
+      setLoadingSessions(false);
+    }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setInitialLoading(true);
       try {
         const sessionsList = await api.listSessions();
-        if (cancelled || !sessionsList.length) return;
+        if (cancelled) return;
+        setSessions(sessionsList);
+        if (!sessionsList.length) {
+          setInitialLoading(false);
+          return;
+        }
         const latest = sessionsList[0];
         const history = await api.sessionMessages(latest.id);
-        if (cancelled || !history.length) return;
-        const hydrated: Msg[] = history.map((m) => ({
-          id: String(m.id),
-          role: m.role,
-          content: m.content,
-          technique: m.technique,
-        }));
-        setMessages(hydrated);
-        setSessionId(latest.id);
-        setSessions(sessionsList);
-        setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 80);
-      } catch {}
+        if (cancelled) return;
+        if (history.length) {
+          const hydrated: Msg[] = history.map((m) => ({
+            id: String(m.id),
+            role: m.role,
+            content: m.content,
+            technique: m.technique,
+          }));
+          setMessages(hydrated);
+          setSessionId(latest.id);
+          setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 80);
+        }
+      } catch (e: any) {
+        console.warn('Failed to load chat history:', e?.message);
+      } finally {
+        if (!cancelled) setInitialLoading(false);
+      }
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Refresh session list when the tab comes into focus (e.g. after re-login)
+  useFocusEffect(
+    useCallback(() => {
+      loadSessions();
+    }, [loadSessions])
+  );
 
   const switchSession = useCallback(async (session: Session) => {
     setShowHistory(false);
@@ -115,15 +140,19 @@ export default function Chat() {
       setMessages(hydrated.length ? hydrated : [WELCOME]);
       setSessionId(session.id);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 80);
-    } catch {}
-  }, []);
+    } catch (e: any) {
+      console.warn('Failed to load session messages:', e?.message);
+      setChatError('Impossible de charger les messages. Vérifiez votre connexion.');
+      setTimeout(() => setChatError(null), 4000);
+    }
+  }, [WELCOME]);
 
   const startNewSession = useCallback(() => {
     setShowHistory(false);
     setSessionId(undefined);
     setMessages([WELCOME]);
     setInput('');
-  }, []);
+  }, [WELCOME]);
 
   const deleteSession = useCallback(async (session: Session) => {
     if (deletingId === session.id) {
@@ -149,12 +178,13 @@ export default function Chat() {
         setDeletingId((current) => (current === id ? null : current));
       }, 3000);
     }
-  }, [sessionId, deletingId]);
+  }, [sessionId, deletingId, WELCOME]);
 
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
     setInput('');
+    setChatError(null);
     const userMsg: Msg = { id: `u${Date.now()}`, role: 'user', content: trimmed };
     setMessages((m) => [...m, userMsg]);
     setSending(true);
@@ -181,9 +211,13 @@ export default function Chat() {
         );
       } catch {}
     } catch (e: any) {
+      console.warn('Chat send failed:', e);
+      const errorMsg = e?.message?.includes('timeout') || e?.message?.includes('Network')
+        ? 'Problème de connexion. Vérifiez votre réseau et réessayez.'
+        : `Désolé, une erreur est survenue. Réessayez dans un instant.`;
       setMessages((m) => [
         ...m,
-        { id: `e${Date.now()}`, role: 'assistant', content: `Désolé, une erreur est survenue : ${e.message}` },
+        { id: `e${Date.now()}`, role: 'assistant', content: errorMsg },
       ]);
     } finally {
       setSending(false);
@@ -268,6 +302,18 @@ export default function Chat() {
         </Pressable>
       </View>
 
+      {chatError && (
+        <View style={{ backgroundColor: colors.errorContainer, marginHorizontal: spacing.containerMobile, borderRadius: radius.md, padding: 10, marginBottom: 8 }}>
+          <Text style={[type.labelSm, { color: colors.error }]}>{chatError}</Text>
+        </View>
+      )}
+
+      {initialLoading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text style={[type.bodyMd, { color: colors.outline, marginTop: 12 }]}>Chargement des conversations...</Text>
+        </View>
+      ) : (
       <FlatList
         ref={listRef}
         data={messages}
@@ -294,6 +340,7 @@ export default function Chat() {
           ) : null
         }
       />
+      )}
 
       <AdBanner isPremium={!!user?.is_premium} />
 

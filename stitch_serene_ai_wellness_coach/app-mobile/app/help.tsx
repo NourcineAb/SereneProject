@@ -2,17 +2,20 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import {
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../lib/theme-provider';
 
 export default function Help() {
   const { theme: t } = useTheme();
+  const insets = useSafeAreaInsets();
   const [expanded, setExpanded] = useState<number | null>(null);
 
   const faq = [
@@ -47,7 +50,7 @@ export default function Help() {
   ];
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: t.colors.background }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ flex: 1, backgroundColor: t.colors.background }} contentContainerStyle={[styles.container, { paddingTop: insets.top + 16 }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12} accessibilityLabel="Retour">
           <Ionicons name="chevron-back" size={28} color={t.colors.primary} />
@@ -122,15 +125,14 @@ export default function Help() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
-    paddingTop: 56,
+    paddingHorizontal: 24,
     paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   faq: {
     gap: 12,

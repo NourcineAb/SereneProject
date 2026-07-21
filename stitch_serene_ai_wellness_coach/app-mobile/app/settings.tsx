@@ -13,6 +13,8 @@ import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
@@ -78,7 +80,7 @@ export default function SettingsScreen() {
     if (!nameValue.trim()) return;
     setSavingName(true);
     try {
-      await api.requestPasswordReset(user?.email ?? "");
+      await api.updateProfile(nameValue.trim());
       await refresh();
       setEditName(false);
     } catch {
@@ -102,10 +104,10 @@ export default function SettingsScreen() {
     }
     setSavingPw(true);
     try {
-      await api.requestPasswordReset(user?.email ?? "");
+      await api.changePassword(currentPw, newPw);
       Alert.alert(
-        t("settings.emailSent"),
-        t("settings.emailSentMsg"),
+        t("settings.passwordChanged"),
+        t("settings.passwordChangedMsg"),
       );
       setShowChangePassword(false);
       setCurrentPw("");
@@ -129,17 +131,25 @@ export default function SettingsScreen() {
     return s;
   };
 
-  const downloadBlob = (content: string, filename: string, mimeType: string) => {
-    if (typeof document === "undefined") return;
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const downloadBlob = async (content: string, filename: string, _mimeType: string) => {
+    if (typeof document !== "undefined") {
+      const blob = new Blob([content], { type: _mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const file = new File(Paths.document, filename);
+    await file.write(content);
+    await Sharing.shareAsync(file.uri, {
+      mimeType: "text/csv",
+      UTI: "public.comma-separated-values-text",
+    });
   };
 
   const handleExport = async () => {
@@ -198,7 +208,7 @@ export default function SettingsScreen() {
       const now = new Date().toISOString().slice(0, 10);
       const filename = `serene_export_${now}.csv`;
 
-      downloadBlob(csvContent, filename, "text/csv;charset=utf-8");
+      await downloadBlob(csvContent, filename, "text/csv;charset=utf-8");
 
       const summary = t("settings.exportSummary", {
         name: data.profile.name,

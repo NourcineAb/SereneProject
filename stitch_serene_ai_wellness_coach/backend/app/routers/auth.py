@@ -54,9 +54,10 @@ async def register(
 ):
     exists = (await db.execute(select(User).where(User.email == body.email))).scalar_one_or_none()
     if exists:
-        # Return a generic 201 to avoid email enumeration (M4).
-        # The caller cannot distinguish between "created" and "already exists".
-        return _make_token_pair(exists)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Un compte existe déjà avec cette adresse email. Connectez-vous ou utilisez un autre email.",
+        )
     user = User(email=body.email, name=body.name, hashed_password=hash_password(body.password))
     db.add(user)
     await db.commit()

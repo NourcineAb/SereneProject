@@ -51,7 +51,7 @@ export async function updateChallengeProgress(challengeId: number): Promise<User
 export async function checkChallengeCompletion(challengeId: number): Promise<boolean> {
   try {
     const myChallenges = await getMyChallenges();
-    const uc = myChallenges.find((c) => c.challenge_id === challengeId && !c.completed);
+    const uc = myChallenges.find((c) => c.challenge_id === challengeId);
     if (!uc) return false;
     return uc.completed;
   } catch {

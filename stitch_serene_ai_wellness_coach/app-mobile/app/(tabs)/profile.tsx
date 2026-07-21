@@ -80,8 +80,8 @@ export default function Profile() {
         <View style={[styles.avatar, { backgroundColor: colors.primaryFixed }]}>
           <Ionicons name="person" size={40} color={colors.primary} />
         </View>
-        <Text style={[type.headlineLg, { color: colors.primary }]}>{user?.name}</Text>
-        <Text style={[type.bodyMd, { color: colors.onSurfaceVariant }]}>{user?.email}</Text>
+        <Text style={[type.headlineLg, { color: colors.primary }]}>{user?.name ?? ''}</Text>
+        <Text style={[type.bodyMd, { color: colors.onSurfaceVariant }]}>{user?.email ?? ''}</Text>
       </View>
 
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
@@ -144,7 +144,7 @@ export default function Profile() {
         </Card>
       </View>
 
-      <PillButton label={t('profile.logout')} variant="outline" onPress={() => { signOut(); router.replace('/login'); }} />
+      <PillButton label={t('profile.logout')} variant="outline" onPress={async () => { await signOut(); router.replace('/login'); }} />
 
       <Text style={[type.labelSm, { color: colors.outline, textAlign: 'center', lineHeight: 18 }]}>
         {t('profile.disclaimer')}

@@ -13,7 +13,6 @@ from ..limiter import limiter
 from ..models import ExerciseCompletion, Message, Session, User
 from ..schemas import ChatIn, ChatOut, MessageOut, SessionOut
 from ..services import coach
-from ..services.llm import LLMError
 
 logger = logging.getLogger("serene.chat")
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -34,10 +33,14 @@ async def chat(
     try:
         result = await coach.handle_chat(db, user, body.message, body.session_id)
     except ValueError as e:
+        logger.warning("Chat value error for user %s: %s", user.id, e)
         raise HTTPException(404, "Session not found") from e
-    except LLMError as e:
-        logger.warning("LLM provider failure: %s", e)
-        raise HTTPException(503, "Coach is temporarily unavailable, please retry.") from e
+    except Exception as e:
+        logger.error("Chat error for user %s: %s", user.id, e, exc_info=True)
+        raise HTTPException(
+            503,
+            "Le coach est temporairement indisponible. Réessayez dans quelques instants.",
+        ) from e
     return result
 
 

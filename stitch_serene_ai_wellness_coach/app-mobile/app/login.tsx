@@ -5,11 +5,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../lib/auth';
 import { useColors, useType } from '../lib/theme-provider';
@@ -22,6 +24,7 @@ export default function Login() {
   const { signIn, signUp } = useAuth();
   const colors = useColors();
   const type = useType();
+  const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const [mode, setMode] = useState<'login' | 'register'>('register');
   const [name, setName] = useState('');
@@ -80,8 +83,13 @@ export default function Login() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={{ flex: 1, backgroundColor: colors.background }}
     >
+      <ScrollView
+        contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.brand}>
         <Ionicons name="leaf" size={36} color={colors.primary} />
         <Text style={[type.displayLg, { color: colors.primary }]}>Serene</Text>
@@ -128,8 +136,22 @@ export default function Login() {
         loading={busy}
         style={{ marginTop: 8 }}
       />
+
+      {mode === 'login' && (
+        <Pressable
+          onPress={() => { setMode('register'); setError(null); }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 16, gap: 6 }}
+          accessibilityRole="button"
+          accessibilityLabel="Retour à l'inscription"
+        >
+          <Ionicons name="arrow-back" size={16} color={colors.secondary} />
+          <Text style={[type.bodyMd, { color: colors.secondary }]}>
+            {t('auth.noAccount')}
+          </Text>
+        </Pressable>
+      )}
       <Text
-        onPress={() => setMode(mode === 'register' ? 'login' : 'register')}
+        onPress={() => { setMode(mode === 'register' ? 'login' : 'register'); setError(null); }}
         style={[type.bodyMd, { color: colors.secondary, textAlign: 'center', marginTop: 20 }]}
         accessibilityRole="button"
         accessibilityLabel={mode === 'register' ? t('auth.hasAccount') : t('auth.noAccount')}
@@ -187,14 +209,15 @@ export default function Login() {
         <Ionicons name="logo-google" size={22} color="#4285F4" />
         <Text style={[styles.googleBtnText, { color: colors.onSurface, fontFamily: type.titleMd.fontFamily }]}>{t('auth.googleSignIn')}</Text>
       </Pressable>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: spacing.containerMobile,
+    paddingHorizontal: spacing.containerMobile,
+    flexGrow: 1,
     justifyContent: 'center',
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.section },
