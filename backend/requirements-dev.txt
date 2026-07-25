@@ -1,0 +1,5 @@
+pytest==8.3.4
+pytest-asyncio==0.24.0
+aiosqlite==0.20.0
+# httpx is already in requirements.txt but listed here for dev-env clarity
+httpx==0.28.1

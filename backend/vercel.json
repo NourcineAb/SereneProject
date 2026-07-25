@@ -1,0 +1,46 @@
+{
+  "outputDirectory": ".",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type,Authorization"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/cron/(.*)",
+      "destination": "/api/cron"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/daily-checkin",
+      "schedule": "0 18 * * *"
+    }
+  ],
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 30
+    },
+    "api/cron.py": {
+      "maxDuration": 60
+    }
+  }
+}

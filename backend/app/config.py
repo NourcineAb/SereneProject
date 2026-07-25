@@ -1,0 +1,162 @@
+import os
+from functools import lru_cache
+
+from pydantic import ValidationError, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Resolve .env relative to THIS file (backend/.env) so the settings load
+# correctly no matter what the current working directory is at launch time
+# (uvicorn from repo root, Vercel serverless at /var/task, tests, etc.).
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_ENV_FILE = os.path.join(_BACKEND_DIR, ".env")
+
+_WEAK_SECRETS = {
+    "",
+    "change-me",
+    "change-me-to-a-long-random-string",
+    "dev-only-not-secret-change-me",
+}
+
+_VALID_LLM_PRIMARY = {"openrouter"}
+_KNOWN_API_KEY_FIELDS = {
+    "openrouter": "openrouter_api_key",
+}
+
+
+def _env_bool(value, default: bool = False) -> bool:
+    if value is None:
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
+
+    # "development" | "production". In production a weak JWT secret refuses to boot.
+    environment: str = "development"
+
+    # Database
+    database_url: str = "postgresql+asyncpg://serene:serene@db:5432/serene"
+
+    # Auth
+    jwt_secret: str = "change-me"
+    jwt_expire_minutes: int = 30          # access token lifetime (minutes)
+    refresh_token_expire_days: int = 30   # refresh token lifetime (days)
+    access_token_algo: str = "HS256"
+
+    # LLM backend — OpenRouter only
+    llm_primary: str = "openrouter"
+    openrouter_api_key: str = ""
+    openrouter_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
+
+    # Freemium / monetization. "iap" | "ads" | "both".
+    monetization_mode: str = "iap"
+    free_sessions_per_week: int = 3
+    premium_price_label: str = "$4.99/month"
+
+    # RevenueCat webhook
+    revenuecat_webhook_secret: str = ""
+
+    # Dev-only: allow the client-callable /billing/premium mock. MUST be false in prod.
+    allow_mock_billing: bool = True
+
+    # CORS — comma-separated origins. Used by CORSMiddleware (allow_origins list).
+    cors_origins: str = (
+        "https://nourcineabsereneproject.vercel.app,"
+        "https://nourcineabsereneproject-3saj9m210-nourcine123s-projects.vercel.app,"
+        "https://nourcineabsereneproject-bud97d04q-nourcine123s-projects.vercel.app,"
+        "https://nourcineabsereneproject-fp5fhk6p2-nourcine123s-projects.vercel.app"
+    )
+    # Rate limiting — requests per window. Set high or disable in test env.
+    rate_limit_login: str = "5/minute"
+    rate_limit_register: str = "3/minute"
+    rate_limit_chat: str = "20/minute"
+    # Set RATE_LIMIT_ENABLED=false to bypass all rate limits (used in tests).
+    rate_limit_enabled: bool = True
+
+    # Field-level encryption (Fernet base64 key). Required in production.
+    # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    field_encryption_key: str = ""
+
+    # Email / SMTP delivery. Left empty in development — emails are logged instead
+    # of sent. Set these (e.g. via Mailgun/SendGrid SMTP or a local relay) so
+    # password-reset and email-verification links are actually delivered.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_pass: str = ""
+    email_from: str = "Serene <no-reply@serene.app>"
+    app_base_url: str = "http://localhost:8081"
+
+    # Vercel Cron — shared secret for authenticating cron-triggered endpoints.
+    # Set CRON_SECRET in Vercel dashboard; Vercel injects it as a Bearer token.
+    cron_secret: str = ""
+
+    @property
+    def cors_list(self) -> list[str]:
+        base = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        _PROD = {
+            "https://nourcineabsereneproject.vercel.app",
+            "https://nourcineabsereneproject-3saj9m210-nourcine123s-projects.vercel.app",
+            "https://nourcineabsereneproject-bud97d04q-nourcine123s-projects.vercel.app",
+            "https://nourcineabsereneproject-fp5fhk6p2-nourcine123s-projects.vercel.app",
+        }
+        return list(dict.fromkeys(base + sorted(_PROD - set(base))))
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment.lower() in {"production", "prod"}
+
+    @model_validator(mode="after")
+    def _harden_production(self) -> "Settings":
+        if self.is_production:
+            if self.jwt_secret in _WEAK_SECRETS or len(self.jwt_secret) < 32:
+                raise ValueError(
+                    "ENVIRONMENT=production requires a strong JWT_SECRET "
+                    "(>=32 chars, not a default). Generate one: "
+                    "python -c 'import secrets; print(secrets.token_urlsafe(48))'"
+                )
+            if _env_bool(self.allow_mock_billing, False):
+                raise ValueError("ALLOW_MOCK_BILLING must be false in production.")
+            if "*" in self.cors_list:
+                raise ValueError("CORS_ORIGINS must be an explicit allow-list in production.")
+            api_key_field = _KNOWN_API_KEY_FIELDS.get(self.llm_primary)
+            if api_key_field:
+                primary_key = getattr(self, api_key_field, "")
+                if not primary_key:
+                    raise ValueError(
+                        f"ENVIRONMENT=production requires {self.llm_primary.upper()}_API_KEY to be set."
+                    )
+            if not self.field_encryption_key:
+                raise ValueError(
+                    "ENVIRONMENT=production requires FIELD_ENCRYPTION_KEY to be set. "
+                    "Generate: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+                )
+        if self.llm_primary not in _VALID_LLM_PRIMARY:
+            import logging as _log
+            _log.getLogger("serene.config").warning(
+                "LLM_PRIMARY=%r is not in known providers %s — "
+                "the chat LLM will fall back to offline demo mode.",
+                self.llm_primary, sorted(_VALID_LLM_PRIMARY),
+            )
+        return self
+
+
+@lru_cache
+def get_settings() -> "Settings":
+    try:
+        return Settings()
+    except ValidationError as exc:
+        missing = [
+            err.get("loc", [""])[0]
+            for err in exc.errors()
+            if err.get("type") == "value_error.missing"
+        ]
+        if missing:
+            raise RuntimeError(
+                "Missing required backend env vars: " + ", ".join(missing)
+            ) from exc
+        raise
+
+
+settings = get_settings()

@@ -1,0 +1,56 @@
+# --- Environment files ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# --- Dependencies ---
+node_modules/
+.venv/
+venv/
+
+# --- Build output ---
+dist/
+web-build/
+.expo/
+
+# --- Runtime data ---
+ruvector.db
+*.db-shm
+*.db-wal
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.tox/
+
+# --- Logs ---
+*.log
+
+# --- Expo ---
+expo-env.d.ts
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- IDE / Editor ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# --- Docker compose overrides ---
+docker-compose.override.yml
