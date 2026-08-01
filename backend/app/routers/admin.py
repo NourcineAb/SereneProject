@@ -595,7 +595,10 @@ h1,h2,h3{font-family:'Quicksand',sans-serif}
   padding:var(--sp-gutter);
   display:flex;align-items:center;gap:var(--sp-gutter);
   box-shadow:0 12px 24px rgba(15,82,56,.12);
+  cursor:pointer;transition:transform .15s,box-shadow .15s;
 }
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 16px 32px rgba(15,82,56,.18)}
+.stat-card:active{transform:translateY(0)}
 .stat-card .icon-bubble{
   width:48px;height:48px;border-radius:var(--r-full);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
@@ -605,6 +608,8 @@ h1,h2,h3{font-family:'Quicksand',sans-serif}
 .stat-card .value{font-size:28px;font-weight:700;color:var(--primary);line-height:1.2}
 .stat-card .label{font-size:13px;font-weight:600;letter-spacing:.65px;text-transform:uppercase;color:var(--on-surface-v)}
 .stat-card .sub{font-size:13px;color:var(--outline);margin-top:2px}
+.stat-card .nav-hint{font-size:12px;color:var(--outline);opacity:0;transition:opacity .15s;margin-left:auto;padding-left:8px}
+.stat-card:hover .nav-hint{opacity:1}
 
 /* ── Charts ── */
 .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-gutter);margin-bottom:var(--sp-section)}
@@ -929,6 +934,14 @@ function switchTab(name){
 }
 
 /* ── Dashboard ── */
+function goToUsers(filter){
+  const search=document.getElementById('user-search');
+  if(filter==='premium') search.value='';
+  else if(filter==='active') search.value='';
+  else search.value='';
+  switchTab('users');
+}
+
 async function loadDashboard(){
   const cards=document.getElementById('stats-cards');
   cards.innerHTML='<div class="loading"><div class="spinner"></div></div>';
@@ -936,13 +949,14 @@ async function loadDashboard(){
     const s=await apiFetch('/admin/stats');
     const t=s.totals,w=s.week;
     cards.innerHTML=`
-      <div class="stat-card"><div class="icon-bubble" style="background:${C.primaryFixed}"><svg viewBox="0 0 24 24" fill="${C.primary}"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div><div class="info"><div class="value">${t.users}</div><div class="label">Utilisateurs</div><div class="sub">+${w.new_users} cette semaine</div></div></div>
-      <div class="stat-card"><div class="icon-bubble" style="background:${C.success};opacity:.12"><svg viewBox="0 0 24 24" fill="${C.success}"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div><div class="info"><div class="value">${w.active_users}</div><div class="label">Actifs (7j)</div><div class="sub">${w.conversion_rate}% conversion</div></div></div>
-      <div class="stat-card"><div class="icon-bubble" style="background:${C.warning};opacity:.12"><svg viewBox="0 0 24 24" fill="${C.warning}"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></div><div class="info"><div class="value">${t.premium_users}</div><div class="label">Premium</div><div class="sub">sur ${t.users} utilisateurs</div></div></div>
-      <div class="stat-card"><div class="icon-bubble" style="background:${C.primaryFixed}"><svg viewBox="0 0 24 24" fill="${C.primary}"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div><div class="info"><div class="value">${w.sessions}</div><div class="label">Sessions (7j)</div><div class="sub">${t.sessions} total</div></div></div>
+      <div class="stat-card" onclick="goToUsers('all')" title="Voir les utilisateurs"><div class="icon-bubble" style="background:${C.primaryFixed}"><svg viewBox="0 0 24 24" fill="${C.primary}"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div><div class="info"><div class="value">${t.users}</div><div class="label">Utilisateurs</div><div class="sub">+${w.new_users} cette semaine</div></div><span class="nav-hint">&rarr;</span></div>
+      <div class="stat-card" onclick="goToUsers('active')" title="Voir les utilisateurs actifs"><div class="icon-bubble" style="background:${C.success};opacity:.12"><svg viewBox="0 0 24 24" fill="${C.success}"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div><div class="info"><div class="value">${w.active_users}</div><div class="label">Actifs (7j)</div><div class="sub">${w.conversion_rate}% conversion</div></div><span class="nav-hint">&rarr;</span></div>
+      <div class="stat-card" onclick="goToUsers('premium')" title="Voir les utilisateurs premium"><div class="icon-bubble" style="background:${C.warning};opacity:.12"><svg viewBox="0 0 24 24" fill="${C.warning}"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></div><div class="info"><div class="value">${t.premium_users}</div><div class="label">Premium</div><div class="sub">sur ${t.users} utilisateurs</div></div><span class="nav-hint">&rarr;</span></div>
+      <div class="stat-card" onclick="document.getElementById('chart-mood').scrollIntoView({behavior:'smooth'})" title="Voir la tendance d'humeur"><div class="icon-bubble" style="background:${C.primaryFixed}"><svg viewBox="0 0 24 24" fill="${C.primary}"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div><div class="info"><div class="value">${w.sessions}</div><div class="label">Sessions (7j)</div><div class="sub">${t.sessions} total</div></div></div>
       <div class="stat-card"><div class="icon-bubble" style="background:${C.secondaryContainer}"><svg viewBox="0 0 24 24" fill="${C.secondary}"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg></div><div class="info"><div class="value">${w.messages}</div><div class="label">Messages (7j)</div><div class="sub">${t.messages} total</div></div></div>
-      <div class="stat-card"><div class="icon-bubble" style="background:${C.primaryFixed}"><svg viewBox="0 0 24 24" fill="${C.primary}"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div><div class="info"><div class="value">${w.mood_logs}</div><div class="label">Humeurs (7j)</div><div class="sub">${t.mood_logs} total</div></div></div>
+      <div class="stat-card" onclick="document.getElementById('chart-mood').scrollIntoView({behavior:'smooth'})" title="Voir le graphique d'humeur"><div class="icon-bubble" style="background:${C.primaryFixed}"><svg viewBox="0 0 24 24" fill="${C.primary}"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div><div class="info"><div class="value">${w.mood_logs}</div><div class="label">Humeurs (7j)</div><div class="sub">${t.mood_logs} total</div></div></div>
     `;
+    // Attach click listeners after render
     renderMoodChart(s.mood_trend);
     renderTechChart(s.techniques);
   }catch(e){cards.innerHTML='<p class="empty">Erreur de chargement</p>'}
