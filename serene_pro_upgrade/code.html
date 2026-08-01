@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#a8e7c5",
+                    "secondary": "#4e653f",
+                    "tertiary": "#484744",
+                    "primary": "#0f5238",
+                    "inverse-primary": "#95d4b3",
+                    "inverse-surface": "#21342b",
+                    "on-error": "#ffffff",
+                    "secondary-fixed": "#d0ebbb",
+                    "error": "#ba1a1a",
+                    "tertiary-fixed-dim": "#c8c6c2",
+                    "on-tertiary-fixed": "#1c1c19",
+                    "on-secondary-fixed-variant": "#374d2a",
+                    "surface-container": "#ddf3e5",
+                    "primary-fixed": "#b1f0ce",
+                    "primary-fixed-dim": "#95d4b3",
+                    "on-tertiary": "#ffffff",
+                    "on-background": "#0c1f17",
+                    "on-tertiary-fixed-variant": "#474743",
+                    "on-surface-variant": "#404943",
+                    "surface-variant": "#d1e8da",
+                    "surface-bright": "#e8fff1",
+                    "tertiary-fixed": "#e5e2dd",
+                    "surface-container-low": "#e2f9eb",
+                    "surface-container-highest": "#d1e8da",
+                    "outline-variant": "#bfc9c1",
+                    "outline": "#707973",
+                    "secondary-container": "#d0ebbb",
+                    "error-container": "#ffdad6",
+                    "surface-container-high": "#d7eee0",
+                    "surface-tint": "#2c694e",
+                    "surface": "#e8fff1",
+                    "on-surface": "#0c1f17",
+                    "on-secondary-container": "#546b45",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "primary-container": "#2d6a4f",
+                    "on-primary": "#ffffff",
+                    "on-primary-fixed-variant": "#0e5138",
+                    "secondary-fixed-dim": "#b5cea1",
+                    "background": "#e8fff1",
+                    "on-tertiary-container": "#dcd9d4",
+                    "surface-dim": "#c9dfd2",
+                    "inverse-on-surface": "#e0f6e8",
+                    "on-secondary-fixed": "#0d2003",
+                    "tertiary-container": "#605f5b",
+                    "on-primary-fixed": "#002114",
+                    "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "section-gap": "40px",
+                    "container-padding-desktop": "48px",
+                    "gutter": "16px",
+                    "container-padding-mobile": "24px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Quicksand"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Quicksand"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "title-md": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Quicksand"],
+                    "body-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["13px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["26px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .soft-glow-card {
+            box-shadow: 0 20px 40px -15px rgba(15, 82, 56, 0.08);
+        }
+        .breath-animation {
+            animation: breath 8s ease-in-out infinite;
+        }
+        @keyframes breath {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md overflow-x-hidden">
+<!-- Header Suppression: This is a focused paywall journey, so standard nav is hidden -->
+<header class="flex justify-between items-center px-container-mobile py-6 w-full absolute top-0 z-10">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-low transition-colors" onclick="history.back()">
+<span class="material-symbols-outlined text-on-surface">close</span>
+</button>
+<div class="font-display-lg text-display-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">spa</span>
+            Serene
+        </div>
+<div class="w-10"></div> <!-- Spacer for centering title -->
+</header>
+<main class="relative pt-24 pb-12 px-container-mobile max-w-4xl mx-auto flex flex-col items-center">
+<!-- Hero Visual Section -->
+<div class="w-full relative mb-10 overflow-hidden rounded-lg aspect-video flex items-center justify-center">
+<img alt="Serene Environment" class="absolute inset-0 w-full h-full object-cover brightness-95 opacity-40 mix-blend-multiply" data-alt="A peaceful and high-end digital illustration of a Zen garden at sunrise, featuring soft pastel greens and creamy white tones. The lighting is ethereal and morning-fresh, creating a serene and trustworthy atmosphere. A minimalist stone lantern sits near a calm water feature, reflecting a palette of sage and forest green. The overall aesthetic is clean, modern, and deeply calming, aligning with a premium wellness application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDq0eQ_pwIjYoWMkH58yMfGBQ6tB59XbtOX67zuBEe90SJR2JoNu4r3v82HJlNOZki5IiydcKN_K8z4qwMdlvjKylaNZbYPXkLXyqogctG9b4rlkZOmZib54y5l9V9orsoknJ4st_SB73tiiooYPWIRqKreWB1Oi5VkJwbsYBA4xxf6XQdHQr0SZ6OSYTGZhXsL-oV_MX_NtCpWOJWGYXra3D9mshphiPRvL8EZrbESFvWBzULd4xqzapYH1L_gAmKSmIXmuj-9xTQ"/>
+<div class="relative z-10 text-center px-6">
+<span class="inline-block px-4 py-1 mb-4 rounded-full bg-primary text-on-primary font-label-sm uppercase tracking-widest text-[10px]">Premium</span>
+<h1 class="font-display-lg text-display-lg text-primary mb-2">Serene Pro</h1>
+<p class="font-body-lg text-on-surface-variant max-w-md mx-auto">
+                    Cultivez votre paix intérieure avec un accès illimité à notre univers de sérénité.
+                </p>
+</div>
+<!-- Decorative Organic Shape -->
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-primary-fixed-dim rounded-full blur-3xl opacity-30 breath-animation"></div>
+</div>
+<!-- Pricing Card Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 w-full mb-section-gap">
+<!-- Main Subscription Card -->
+<div class="md:col-span-12 lg:col-span-7 bg-surface-container-lowest p-8 rounded-lg soft-glow-card border border-surface-variant flex flex-col relative overflow-hidden">
+<div class="absolute top-0 right-0 p-6 opacity-5">
+<span class="material-symbols-outlined text-[120px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<h2 class="font-title-md text-primary mb-6">Votre Pass Illimité</h2>
+<ul class="space-y-5 mb-8 flex-grow">
+<li class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'wght' 600;">all_inclusive</span>
+</div>
+<span class="font-body-md text-on-surface">Sessions illimitées</span>
+</li>
+<li class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'wght' 600;">library_books</span>
+</div>
+<span class="font-body-md text-on-surface">Bibliothèque d'exercices complète</span>
+</li>
+<li class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'wght' 600;">insights</span>
+</div>
+<span class="font-body-md text-on-surface">Rapports d'IA hebdomadaires</span>
+</li>
+</ul>
+<div class="flex items-baseline gap-2 mt-4">
+<span class="font-display-lg text-primary">4,99 €</span>
+<span class="font-body-md text-on-surface-variant">/ mois</span>
+</div>
+<p class="text-[12px] font-label-sm text-outline mt-1 italic">Sans engagement, résiliable à tout moment.</p>
+</div>
+<!-- Trust / Stats Card (Bento Style) -->
+<div class="md:col-span-12 lg:col-span-5 grid grid-cols-1 gap-6">
+<div class="bg-primary-container text-on-primary p-6 rounded-lg soft-glow-card flex items-center gap-4">
+<div class="p-3 bg-white/20 rounded-full">
+<span class="material-symbols-outlined text-white">star</span>
+</div>
+<div>
+<p class="font-title-md leading-tight">Recommandé</p>
+<p class="text-sm opacity-80">Par 95% de nos utilisateurs</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-6 rounded-lg flex flex-col justify-center border border-surface-variant">
+<div class="flex -space-x-2 mb-3">
+<img class="w-8 h-8 rounded-full border-2 border-surface-container-low" data-alt="Close up portrait of a smiling woman in warm natural light, soft green background, part of a testimonials group." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBOpEIMO57rWxT1PMYDHagwY2rWp50bfBaWcDxeoF64VuPdm6bkvdOQjuTHRn19GXiQCaTaPTERjPPBUKurguvQOmhsukjgogldZzKNvQIUmfw9EWySAmxiD2clokkV85XaAOk8XHdf9VlMLnBUdSPKpgrf_5pe5PQq5WdA_AYocGXSjStn4KB1RNtLcSArYa6UCMdOIBgwwhMg6xuMq-pTWkxlzBJ5uLyoNxYeCQ9lZ9O0l84XOuGSwtL1GhVcW8ZRgcAxoa9kS4"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface-container-low" data-alt="Close up portrait of a calm man with eyes closed in a meditation pose, high-key lighting, soft aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPArVw_GMG-iKUkFd7YoMH39Uav9icebWoFx5uMZTn8jji42A7KBR5QSauulww7ZddDvFyHz0QZyI8nacdsOiabunKSa-BNPmz21qR2vsyCXM7-4kqA26cngN0sPNpaayKpcuDVeyV7uNFeih2IoNABDGCjy9JooPtJChK5Zgj-LXwzJ_jDbd8qQrkwORr_8V97Olkwn1B3_l7GW7fDPmSbtMrz6ZtTZ16GAq5it3BlRR3BxR66swO7OZfqGUr2zItedyPictzQug"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface-container-low" data-alt="Close up portrait of a serene young person with a slight smile, natural lighting, soft background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCW-ORcOWNXk44acqb5lZXMLZQ76draG71mreioWoA7aWXdMoR7fItNuFPtw9hImWhSOhYMsDBw1-LmCOS1ux7fG6zzrT0oBWz0sIxyt9RIrGrjqWpOhVlJHZKKseOA5yFXpPg2ehTqc95rXsS3XUlToORWvC6eHLseMYc-s0OvtdA-zALv3Zj0Cxx675gHIyQQEQs7txaNXwGtUhMu-aYCQi00E2CHGi3rnga0Bs_4HgnNkgQH3HkskhrMlrYHkvLQrOx7cOL_Tso"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface-container-low bg-secondary-fixed flex items-center justify-center text-[10px] font-bold text-on-secondary-fixed">+12k</div>
+</div>
+<p class="font-body-md text-on-surface-variant leading-snug">Rejoignez une communauté bienveillante.</p>
+</div>
+</div>
+</div>
+<!-- CTA Section -->
+<div class="w-full text-center space-y-6">
+<button class="group w-full max-w-md bg-primary text-on-primary py-5 px-8 rounded-full font-title-md hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3">
+                Commencer l'essai gratuit de 7 jours
+                <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+</button>
+<p class="text-on-surface-variant font-label-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+                Paiement sécurisé. Pas de prélèvement avant 7 jours.
+            </p>
+</div>
+<!-- Footer Policy Links -->
+<footer class="mt-section-gap w-full flex flex-col items-center border-t border-surface-variant pt-8">
+<div class="flex gap-6 mb-4">
+<a class="text-on-surface-variant font-label-sm hover:text-primary transition-colors" href="#">Conditions</a>
+<a class="text-on-surface-variant font-label-sm hover:text-primary transition-colors" href="#">Confidentialité</a>
+<a class="text-on-surface-variant font-label-sm hover:text-primary transition-colors" href="#">Restauration</a>
+</div>
+<p class="text-[11px] text-outline text-center max-w-xs">
+                L'abonnement sera débité de votre compte après l'essai gratuit. Annulez au moins 24h avant la fin pour éviter les frais.
+            </p>
+</footer>
+</main>
+<!-- Background Decorative Elements -->
+<div class="fixed top-0 left-0 -z-10 w-full h-full pointer-events-none overflow-hidden">
+<div class="absolute top-[10%] left-[-5%] w-72 h-72 bg-surface-container rounded-full blur-[100px] opacity-40"></div>
+<div class="absolute bottom-[5%] right-[-5%] w-96 h-96 bg-primary-fixed-dim rounded-full blur-[120px] opacity-30"></div>
+</div>
+<script>
+        // Micro-interaction for the CTA button glow
+        const cta = document.querySelector('button');
+        cta.addEventListener('mouseenter', () => {
+            cta.style.boxShadow = '0 25px 50px -12px rgba(15, 82, 56, 0.25)';
+        });
+        cta.addEventListener('mouseleave', () => {
+            cta.style.boxShadow = '';
+        });
+    </script>
+</body></html>
