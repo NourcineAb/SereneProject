@@ -41,7 +41,6 @@ expo-env.d.ts
 .DS_Store
 Thumbs.db
 Desktop.ini
-__MACOSX/
 
 # --- IDE / Editor ---
 .idea/
@@ -55,9 +54,3 @@ __MACOSX/
 
 # --- Docker compose overrides ---
 docker-compose.override.yml
-
-# --- Third-party project (not part of Serene) ---
-antigravity-awesome-skills/
-
-# --- Root-level artifacts ---
-package-lock.json
