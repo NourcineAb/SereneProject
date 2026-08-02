@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     monetization_mode: str = "iap"
     free_sessions_per_week: int = 3
     premium_price_label: str = "$4.99/month"
+    # Numeric USD prices used when recording backoffice subscription records.
+    premium_price_monthly: float = 4.99
+    premium_price_yearly: float = 49.99
 
     # RevenueCat webhook
     revenuecat_webhook_secret: str = ""

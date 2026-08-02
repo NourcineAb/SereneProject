@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -25,6 +25,11 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     # Incremented on logout to invalidate all issued tokens (token revocation).
     token_version: Mapped[int] = mapped_column(Integer, default=0)
+    # Backoffice-only flags (do not affect the mobile UI itself; enforced server-side).
+    is_suspended: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
 
     sessions: Mapped[list["Session"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
@@ -43,6 +48,15 @@ class User(Base):
     )
     exercise_completions: Mapped[list["ExerciseCompletion"]] = relationship(
         cascade="all, delete-orphan"
+    )
+    subscriptions: Mapped[list["Subscription"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    payments: Mapped[list["Payment"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    feedback_items: Mapped[list["Feedback"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
 
 
@@ -174,3 +188,149 @@ class ExerciseCompletion(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     exercise_id: Mapped[str] = mapped_column(String(64), index=True)  # e.g. "square-breathing"
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Backoffice-only models. These tables exist solely to power the admin panel.
+# They are never read by the mobile app; the mobile app is only affected when an
+# admin action (e.g. suspend, grant premium) changes a user's core fields.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class Subscription(Base):
+    """A real premium subscription record (started via RevenueCat webhook, the
+    admin panel, or the dev mock billing endpoint)."""
+
+    __tablename__ = "subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    plan: Mapped[str] = mapped_column(String(32), default="monthly")  # "monthly" | "yearly"
+    status: Mapped[str] = mapped_column(String(16), default="active")  # active | trial | canceled | expired
+    price: Mapped[float] = mapped_column(Float, default=0.0)  # amount in USD
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    is_trial: Mapped[bool] = mapped_column(Boolean, default=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    current_period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    current_period_end: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=None
+    )
+    canceled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+    user: Mapped["User"] = relationship(back_populates="subscriptions")
+    payments: Mapped[list["Payment"]] = relationship(back_populates="subscription")
+
+
+class Payment(Base):
+    """A real payment record. Revenue is summed from these rows — never mocked."""
+
+    __tablename__ = "payments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    subscription_id: Mapped[int | None] = mapped_column(
+        ForeignKey("subscriptions.id"), nullable=True
+    )
+    amount: Mapped[float] = mapped_column(Float, default=0.0)
+    currency: Mapped[str] = mapped_column(String(8), default="USD")
+    status: Mapped[str] = mapped_column(String(16), default="succeeded")
+    source: Mapped[str] = mapped_column(String(16), default="revenuecat")  # revenuecat | admin | mock
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+    user: Mapped["User"] = relationship(back_populates="payments")
+    subscription: Mapped["Subscription | None"] = relationship(back_populates="payments")
+
+
+class AdminNotification(Base):
+    """A notification sent from the backoffice (persisted for history)."""
+
+    __tablename__ = "admin_notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(160))
+    body: Mapped[str] = mapped_column(Text)
+    target_type: Mapped[str] = mapped_column(String(16), default="all")  # all | premium | free | specific
+    target_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, default=None
+    )
+    status: Mapped[str] = mapped_column(String(16), default="sent")  # sent | partial | failed
+    total_targets: Mapped[int] = mapped_column(Integer, default=0)
+    sent_count: Mapped[int] = mapped_column(Integer, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, default=None
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class Feedback(Base):
+    """User feedback, suggestions and bug reports visible in the backoffice."""
+
+    __tablename__ = "feedback"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    category: Mapped[str] = mapped_column(String(16), default="feedback")  # feedback | suggestion | bug
+    content: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), default="open")  # open | in_progress | resolved
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+
+    user: Mapped["User"] = relationship(back_populates="feedback_items")
+
+
+class AdminAuditLog(Base):
+    """Immutable trail of every admin action performed in the backoffice."""
+
+    __tablename__ = "admin_audit_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    admin_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, default=None
+    )
+    action: Mapped[str] = mapped_column(String(64), index=True)
+    target_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, default=None
+    )
+    details: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    result: Mapped[str] = mapped_column(String(16), default="success")  # success | error
+    ip: Mapped[str | None] = mapped_column(String(45), nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+    admin: Mapped["User | None"] = relationship(foreign_keys=[admin_user_id])
+    target: Mapped["User | None"] = relationship(foreign_keys=[target_user_id])
+
+
+class AIUsageLog(Base):
+    """One row per LLM request: model, latency, tokens, errors (AI monitoring)."""
+
+    __tablename__ = "ai_usage_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True, default=None, index=True
+    )
+    session_id: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    model: Mapped[str | None] = mapped_column(String(96), nullable=True, default=None)
+    status: Mapped[str] = mapped_column(String(16), default="success")  # success | error
+    latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    completion_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class ErrorLog(Base):
+    """Server-side error log surfaced in the backoffice System page."""
+
+    __tablename__ = "error_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(String(32), default="api")
+    method: Mapped[str | None] = mapped_column(String(8), nullable=True, default=None)
+    path: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    message: Mapped[str] = mapped_column(Text)
+    detail: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
-from ..models import ExerciseCompletion, Message, Session, User
+from ..models import AIUsageLog, ExerciseCompletion, Message, Session, User
 from ..prompts import (
     CRISIS_REPLY,
     build_system_prompt,
@@ -165,7 +166,24 @@ async def handle_chat(
     )
     history = await _load_history(db, session.id)
 
-    raw = await llm.generate(system, history)
+    # ── Real LLM usage monitoring (backoffice AI page) ──────────────────────
+    llm_report: dict = {}
+    started = time.perf_counter()
+    raw = await llm.generate(system, history, report=llm_report)
+    latency_ms = llm_report.get("latency_ms") or int((time.perf_counter() - started) * 1000)
+    db.add(
+        AIUsageLog(
+            user_id=user.id,
+            session_id=session.id,
+            model=llm_report.get("model"),
+            status=llm_report.get("status", "success"),
+            latency_ms=latency_ms,
+            prompt_tokens=llm_report.get("prompt_tokens"),
+            completion_tokens=llm_report.get("completion_tokens"),
+            total_tokens=llm_report.get("total_tokens"),
+            error=llm_report.get("error"),
+        )
+    )
     reply, technique = extract_technique(raw)
 
     db.add(Message(session_id=session.id, role="assistant", content=reply, technique=technique))

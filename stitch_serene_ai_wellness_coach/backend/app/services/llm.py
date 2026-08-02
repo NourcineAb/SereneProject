@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
+from dataclasses import dataclass
 
 import httpx
 
@@ -122,7 +124,14 @@ _OPENROUTER_FREE_MODELS = (
 )
 
 
-async def _call_openrouter(system: str, history: list[dict]) -> str:
+@dataclass
+class LLMResult:
+    content: str
+    model: str | None = None
+    usage: dict | None = None
+
+
+async def _call_openrouter(system: str, history: list[dict]) -> LLMResult:
     if not settings.openrouter_api_key:
         raise LLMError("OPENROUTER_API_KEY not set")
     headers = {
@@ -186,17 +195,18 @@ async def _call_openrouter(system: str, history: list[dict]) -> str:
                 data = r.json()
                 try:
                     content = data["choices"][0]["message"]["content"].strip()
+                    usage = data.get("usage") or {}
                     logger.info("LLM success on model=%s (attempt %d)", model, attempt + 1)
-                    return content
+                    return LLMResult(content=content, model=model, usage=usage)
                 except (KeyError, IndexError) as e:
                     last_err = f"Unexpected response from {model}: {data}"
                     raise LLMError(last_err) from e
     raise LLMError(
-        last_err or f"OpenRouter: all {len(candidates)} models exhausted"
+        f"{last_err or 'OpenRouter: all models exhausted'} | tried: {', '.join(models_tried)}"
     )
 
 
-async def generate(system: str, history: list[dict]) -> str:
+async def generate(system: str, history: list[dict], *, report: dict | None = None) -> str:
     """Call OpenRouter with automatic model fallback.
 
     If no real key is configured, fall back to offline demo mode so
@@ -204,15 +214,38 @@ async def generate(system: str, history: list[dict]) -> str:
 
     This function NEVER raises — if all OpenRouter models fail, it falls
     back to the offline demo coach so the chat flow still works.
+
+    ``report`` is an optional mutable dict that gets populated with the real
+    metrics of the call (model, latency_ms, tokens, status, error) so the
+    backoffice AI monitoring page can record real usage data.
     """
+    started = time.perf_counter()
+
+    def _finish(status: str, model: str | None = None, error: str | None = None, usage: dict | None = None) -> None:
+        if report is None:
+            return
+        report["status"] = status
+        report["model"] = model
+        report["latency_ms"] = int((time.perf_counter() - started) * 1000)
+        if usage:
+            report["prompt_tokens"] = usage.get("prompt_tokens")
+            report["completion_tokens"] = usage.get("completion_tokens")
+            report["total_tokens"] = usage.get("total_tokens")
+        if error:
+            report["error"] = error
+
     if not _is_real_key(settings.openrouter_api_key):
         logger.warning("No real OpenRouter key configured; using offline demo mode.")
+        _finish("success", model="offline-demo")
         return await _demo_generate(system, history)
     try:
-        return await _call_openrouter(system, history)
+        result = await _call_openrouter(system, history)
+        _finish("success", model=result.model, usage=result.usage)
+        return result.content
     except Exception as e:  # noqa: BLE001
         # OpenRouter completely failed — fall back to offline demo coach so
         # the chat flow still works instead of returning a hard 503 to the
         # client.
         logger.error("OpenRouter failed (%s); using offline demo mode.", e)
+        _finish("error", error=str(e))
         return await _demo_generate(system, history)

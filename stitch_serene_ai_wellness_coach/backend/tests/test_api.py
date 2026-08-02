@@ -120,7 +120,7 @@ async def test_crisis_detection_returns_referral(client: AsyncClient, monkeypatc
 
     llm_called = []
 
-    async def _spy_generate(system, history):
+    async def _spy_generate(system, history, **kwargs):
         llm_called.append(True)
         return CANNED_REPLY
 

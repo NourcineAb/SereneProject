@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Serene — Backoffice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin/assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+
+<!-- ════ LOGIN ════ -->
+<div id="login-view" class="login-wrap">
+  <div class="login-box">
+    <div class="brand">
+      <div class="leaf">
+        <svg viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+      </div>
+      <h1>Serene</h1>
+    </div>
+    <p class="welcome">Bienvenue</p>
+    <p class="subtitle">Connectez-vous au backoffice</p>
+    <form id="login-form">
+      <div class="form-group">
+        <input type="email" id="email" placeholder="Email" required>
+      </div>
+      <div class="form-group">
+        <input type="password" id="password" placeholder="Mot de passe" required>
+      </div>
+      <button type="submit" class="pill pill-primary" style="margin-top:8px">Se connecter</button>
+      <p id="login-error" class="login-error"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ════ APP ════ -->
+<div id="app" class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="leaf">
+        <svg viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"/></svg>
+      </div>
+      <h1>Serene</h1>
+    </div>
+    <nav>
+      <a href="#" class="active" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Dashboard
+      </a>
+      <a href="#" data-tab="analytics">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
+        Analytics
+      </a>
+      <a href="#" data-tab="users">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        Utilisateurs
+      </a>
+      <a href="#" data-tab="subscriptions">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        Abonnements
+      </a>
+      <a href="#" data-tab="ai">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.12-.1.17-.24.12-.37l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.12.1-.17.24-.12.37l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/></svg>
+        IA
+      </a>
+      <a href="#" data-tab="notifications">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        Notifications
+      </a>
+      <a href="#" data-tab="feedback">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 12h-2v-2h2v2zm0-4h-2V6h2v4z"/></svg>
+        Feedback
+      </a>
+      <a href="#" data-tab="audit">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2c-5.25 0-9.5 4.25-9.5 9.5 0 2.12.7 4.07 1.87 5.63L2 20.5 3.5 22l3.37-3.87C8.43 19.3 10.38 20 12.5 20c5.25 0 9.5-4.25 9.5-9.5S18.75 2 13.5 2zm0 17c-4.14 0-7.5-3.36-7.5-7.5S9.36 4 13.5 4 21 7.36 21 11.5 17.64 19 13.5 19z"/></svg>
+        Audit
+      </a>
+      <a href="#" data-tab="system">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        Système
+      </a>
+    </nav>
+    <div class="foot">
+      <button class="btn btn-outline" style="width:100%" onclick="logout()">Déconnexion</button>
+    </div>
+  </aside>
+
+  <div id="scrim" class="scrim"></div>
+  <div class="topbar">
+    <button id="menu-btn" class="menu-btn" aria-label="Menu">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    </button>
+    <h1 class="topbar-brand">Serene</h1>
+    <button class="btn btn-outline btn-sm" onclick="logout()">Déconnexion</button>
+  </div>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div id="page-dashboard">
+      <h2>Dashboard</h2>
+      <p class="subtitle">Vue d'ensemble de votre application wellness</p>
+      <div id="stats-cards" class="stats-grid"></div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3>Tendance d'humeur (7 jours)</h3>
+          <canvas id="chart-mood"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Techniques utilisées (7 jours)</h3>
+          <canvas id="chart-tech"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="page-analytics" style="display:none">
+      <h2>Analytics</h2>
+      <p class="subtitle">Croissance, activité et revenus sur 30 jours</p>
+      <div id="analytics-content"></div>
+    </div>
+
+    <!-- USERS -->
+    <div id="page-users" style="display:none">
+      <h2>Utilisateurs</h2>
+      <p class="subtitle">Gérer les comptes et le support</p>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <input type="text" id="user-search" placeholder="Rechercher par nom ou email...">
+          <select id="user-filter-premium">
+            <option value="">Statut premium</option>
+            <option value="true">Premium</option>
+            <option value="false">Gratuit</option>
+          </select>
+          <select id="user-filter-active">
+            <option value="">Activité 7j</option>
+            <option value="true">Actif</option>
+            <option value="false">Inactif</option>
+          </select>
+          <select id="user-filter-suspended">
+            <option value="">Suspension</option>
+            <option value="true">Suspendus</option>
+            <option value="false">Non suspendus</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nom</th><th>Email</th><th>Sessions</th><th>Statut</th><th>Activité</th>
+              <th>Inscrit</th><th>Dernière connexion</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+        <div class="pagination" id="users-pagination"></div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTIONS -->
+    <div id="page-subscriptions" style="display:none">
+      <h2>Abonnements</h2>
+      <p class="subtitle">Abonnés, revenus et expirations</p>
+      <div id="subs-cards" class="stats-grid"></div>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <select id="subs-filter">
+            <option value="">Tous les statuts</option>
+            <option value="active">Active</option>
+            <option value="trial">Essai</option>
+            <option value="canceled">Annulée</option>
+            <option value="expired">Expirée</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Utilisateur</th><th>Email</th><th>Plan</th><th>Statut</th><th>Type</th>
+              <th>Prix</th><th>Début</th><th>Fin</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="subs-tbody"></tbody>
+        </table>
+        <div class="pagination" id="subs-pagination"></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-toolbar"><span style="font-weight:600;color:var(--primary)">Expirations à venir (7 jours)</span></div>
+        <table>
+          <thead>
+            <tr><th>Utilisateur</th><th>Email</th><th>Plan</th><th>Prix</th><th>Fin</th><th></th></tr>
+          </thead>
+          <tbody id="expiring-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AI -->
+    <div id="page-ai" style="display:none">
+      <h2>Monitoring IA</h2>
+      <p class="subtitle">Usage réel du LLM, latence et erreurs</p>
+      <div id="ai-cards" class="stats-grid"></div>
+      <div class="charts-row">
+        <div class="chart-card wide">
+          <h3>Requêtes IA par jour (30j)</h3>
+          <canvas id="chart-ai-overview"></canvas>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-toolbar"><span style="font-weight:600;color:var(--primary)">Modèles utilisés</span></div>
+        <table>
+          <thead><tr><th>Modèle</th><th>Requêtes</th><th>Erreurs</th><th>Latence moy.</th><th>Tokens</th></tr></thead>
+          <tbody id="ai-models-tbody"></tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <div class="table-toolbar"><span style="font-weight:600;color:var(--primary)">Erreurs récentes</span></div>
+        <table>
+          <thead><tr><th>Modèle</th><th>Erreur</th><th>Date</th></tr></thead>
+          <tbody id="ai-errors-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div id="page-notifications" style="display:none">
+      <h2>Notifications</h2>
+      <p class="subtitle">Envoyer des notifications push et consulter l'historique</p>
+      <div class="notif-form">
+        <h3>Nouvelle notification</h3>
+        <form id="notif-form">
+          <div class="form-group"><label>Titre</label><input type="text" id="notif-title" required maxlength="160" placeholder="Titre de la notification"></div>
+          <div class="form-group"><label>Contenu</label><textarea id="notif-body" rows="3" required maxlength="2000" placeholder="Votre message..."></textarea></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cible</label>
+              <select id="notif-target">
+                <option value="all">Tous les utilisateurs</option>
+                <option value="premium">Abonnés premium</option>
+                <option value="free">Utilisateurs gratuits</option>
+                <option value="specific">Utilisateur précis</option>
+              </select>
+            </div>
+            <div class="form-group" style="display:none">
+              <label>ID utilisateur</label>
+              <input type="number" id="notif-user" placeholder="ID de l'utilisateur">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Envoyer</button>
+          <p id="notif-msg" class="msg"></p>
+        </form>
+      </div>
+      <div class="table-wrap">
+        <div class="table-toolbar"><span style="font-weight:600;color:var(--primary)">Historique</span></div>
+        <table>
+          <thead>
+            <tr><th>Titre</th><th>Contenu</th><th>Cible</th><th>Statut</th><th>Envoyées</th><th>Échecs</th><th>Date</th></tr>
+          </thead>
+          <tbody id="notif-tbody"></tbody>
+        </table>
+        <div class="pagination" id="notif-pagination"></div>
+      </div>
+    </div>
+
+    <!-- FEEDBACK -->
+    <div id="page-feedback" style="display:none">
+      <h2>Feedback</h2>
+      <p class="subtitle">Retours utilisateurs, suggestions et bugs</p>
+      <div id="fb-cards"></div>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <select id="fb-filter-status">
+            <option value="">Tous les statuts</option>
+            <option value="open">Ouvert</option>
+            <option value="in_progress">En cours</option>
+            <option value="resolved">Résolu</option>
+          </select>
+          <select id="fb-filter-category">
+            <option value="">Toutes les catégories</option>
+            <option value="feedback">Feedback</option>
+            <option value="suggestion">Suggestion</option>
+            <option value="bug">Bug</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr><th>Utilisateur</th><th>Catégorie</th><th>Contenu</th><th>Statut</th><th>Date</th><th></th></tr></thead>
+          <tbody id="fb-tbody"></tbody>
+        </table>
+        <div class="pagination" id="fb-pagination"></div>
+      </div>
+    </div>
+
+    <!-- AUDIT -->
+    <div id="page-audit" style="display:none">
+      <h2>Journal d'audit</h2>
+      <p class="subtitle">Traçabilité des actions administrateurs</p>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <select id="audit-filter"><option value="">Toutes les actions</option></select>
+        </div>
+        <table>
+          <thead><tr><th>Action</th><th>Admin</th><th>Cible</th><th>Détails</th><th>Résultat</th><th>Date</th></tr></thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+        <div class="pagination" id="audit-pagination"></div>
+      </div>
+    </div>
+
+    <!-- SYSTEM -->
+    <div id="page-system" style="display:none">
+      <h2>Système</h2>
+      <p class="subtitle">État de l'infrastructure et erreurs serveur</p>
+      <div id="system-content"></div>
+      <div class="table-wrap">
+        <div class="table-toolbar"><span style="font-weight:600;color:var(--primary)">Erreurs récentes</span></div>
+        <table>
+          <thead><tr><th>Source</th><th>Route</th><th>Message</th><th>Détail</th><th>Date</th></tr></thead>
+          <tbody id="errors-tbody"></tbody>
+        </table>
+        <div class="pagination" id="errors-pagination"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Détails utilisateur</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="/admin/assets/app.js"></script>
+</body>
+</html>

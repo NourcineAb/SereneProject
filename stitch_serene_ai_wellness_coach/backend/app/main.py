@@ -34,23 +34,29 @@ async def lifespan(app: FastAPI):
             if not admin_exists:
                 import os
                 admin_email = os.environ.get("ADMIN_EMAIL", "admin@serene.app")
-                admin_password = os.environ.get("ADMIN_PASSWORD", "SereneAdmin2024!")
-                existing = (await db.execute(
-                    select(User).where(User.email == admin_email)
-                )).scalar_one_or_none()
-                if existing:
-                    existing.is_admin = True
-                    await db.commit()
-                else:
-                    user = User(
-                        email=admin_email,
-                        name="Admin",
-                        hashed_password=hash_password(admin_password),
-                        is_admin=True,
-                        email_verified=True,
-                    )
-                    db.add(user)
-                    await db.commit()
+                admin_password = os.environ.get("ADMIN_PASSWORD")
+                if not admin_password:
+                    if settings.is_production:
+                        _logger.error("ADMIN_PASSWORD is not set; skipping default admin creation in production")
+                    else:
+                        admin_password = "SereneAdmin2024!"  # dev-only fallback
+                if admin_password:
+                    existing = (await db.execute(
+                        select(User).where(User.email == admin_email)
+                    )).scalar_one_or_none()
+                    if existing:
+                        existing.is_admin = True
+                        await db.commit()
+                    else:
+                        user = User(
+                            email=admin_email,
+                            name="Admin",
+                            hashed_password=hash_password(admin_password),
+                            is_admin=True,
+                            email_verified=True,
+                        )
+                        db.add(user)
+                        await db.commit()
     except Exception:
         pass
     yield
@@ -77,7 +83,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .routers import auth, billing, chat, community, integrations, journal, mood, progress, report, admin  # noqa: E402
+from .routers import auth, billing, chat, community, feedback, integrations, journal, mood, progress, report  # noqa: E402
+from .routers.admin import (  # noqa: E402
+    ai_monitoring,
+    audit,
+    feedback as admin_feedback,
+    notifications,
+    panel,
+    stats,
+    subscriptions,
+    system,
+    users,
+)
 
 app.include_router(auth.router)
 app.include_router(chat.router)
@@ -88,16 +105,51 @@ app.include_router(billing.router)
 app.include_router(integrations.router)
 app.include_router(report.router)
 app.include_router(community.router)
-app.include_router(admin.router)
+app.include_router(feedback.router)
+app.include_router(panel.router)
+app.include_router(stats.router)
+app.include_router(users.router)
+app.include_router(subscriptions.router)
+app.include_router(ai_monitoring.router)
+app.include_router(notifications.router)
+app.include_router(admin_feedback.router)
+app.include_router(audit.router)
+app.include_router(system.router)
 
 
 @app.exception_handler(Exception)
 async def catch_all_exception_handler(request: Request, exc: Exception):
     _logger.error("Unhandled exception on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
+    await _record_error(
+        source="api",
+        method=request.method,
+        path=request.url.path,
+        message=str(exc) or exc.__class__.__name__,
+        detail=exc.__class__.__name__,
+    )
     return JSONResponse(
         status_code=500,
         content={"detail": "Une erreur interne est survenue. Réessayez dans quelques instants."},
     )
+
+
+async def _record_error(
+    source: str,
+    method: str | None,
+    path: str | None,
+    message: str,
+    detail: str | None = None,
+) -> None:
+    """Persist a server error for the backoffice System page. Best-effort."""
+    try:
+        from .database import get_session_factory
+        from .models import ErrorLog
+        factory = get_session_factory()
+        async with factory() as db:
+            db.add(ErrorLog(source=source, method=method, path=path, message=message[:4000], detail=detail))
+            await db.commit()
+    except Exception:
+        _logger.debug("Failed to persist error log", exc_info=True)
 
 
 @app.get("/", tags=["meta"])

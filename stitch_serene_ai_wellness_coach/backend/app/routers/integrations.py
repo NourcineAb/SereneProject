@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel
@@ -13,6 +14,7 @@ from ..database import get_db
 from ..deps import get_current_user
 from ..models import User
 from ..services import push
+from ..services.subscription import grant_premium, revoke_premium
 
 logger = logging.getLogger(__name__)
 
@@ -111,10 +113,42 @@ async def revenuecat_webhook(
         logger.warning("revenuecat_webhook: user id=%s not found", user_id)
         return {"status": "ignored"}
 
-    new_premium = event_type in _GRANT_EVENTS
-    user.is_premium = new_premium
-    db.add(user)
-    await db.commit()
+    if event_type in _GRANT_EVENTS:
+        # ── Record a real subscription + payment for the backoffice ──────────
+        price = event.get("price")
+        try:
+            price = float(price) if price is not None else None
+        except (TypeError, ValueError):
+            price = None
+        period_end = None
+        exp_ms = event.get("expiration_at_ms")
+        if exp_ms:
+            try:
+                period_end = datetime.fromtimestamp(int(exp_ms) / 1000, tz=timezone.utc)
+            except (TypeError, ValueError, OSError):
+                period_end = None
+        period_type = str(event.get("period_type", "")).upper()
+        is_trial = period_type == "TRIAL"
+        await grant_premium(
+            db,
+            user,
+            source="revenuecat",
+            plan="yearly" if str(event.get("product_id", "")).lower().find("year") >= 0 else "monthly",
+            price=price,
+            currency=str(event.get("currency") or "USD"),
+            period_end=period_end,
+            is_trial=is_trial,
+        )
+        new_premium = True
+    else:
+        await revoke_premium(
+            db,
+            user,
+            source="revenuecat",
+            reason="expired" if event_type == "EXPIRATION" else "canceled",
+        )
+        new_premium = False
+
     logger.info(
         "revenuecat_webhook: user id=%s is_premium set to %s via event %s",
         user_id, new_premium, event_type,

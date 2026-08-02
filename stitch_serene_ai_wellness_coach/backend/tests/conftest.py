@@ -70,7 +70,7 @@ async def client(db_session: AsyncSession, monkeypatch):
     # Monkeypatch the LLM generate function to return a canned reply.
     import app.services.llm as llm_module
 
-    async def _fake_generate(system: str, history: list[dict]) -> str:  # noqa: ARG001
+    async def _fake_generate(system: str, history: list[dict], **kwargs) -> str:  # noqa: ARG001
         return CANNED_REPLY
 
     monkeypatch.setattr(llm_module, "generate", _fake_generate)
