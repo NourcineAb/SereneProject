@@ -122,6 +122,7 @@ def upgrade() -> None:
     op.add_column("users", sa.Column("is_suspended", sa.Boolean(), server_default=sa.text("false"), nullable=False))
     op.add_column("users", sa.Column("last_login_at", sa.DateTime(timezone=True), nullable=True, default=None))
     op.add_column("users", sa.Column("is_admin", sa.Boolean(), server_default=sa.text("false"), nullable=False))
+    op.add_column("users", sa.Column("email_verified", sa.Boolean(), server_default=sa.text("false"), nullable=False))
     _create_backoffice_tables()
 
 
@@ -137,3 +138,4 @@ def downgrade() -> None:
     op.drop_column("users", "last_login_at")
     op.drop_column("users", "is_suspended")
     op.drop_column("users", "is_admin")
+    op.drop_column("users", "email_verified")
