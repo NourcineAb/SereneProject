@@ -90,6 +90,7 @@ from .routers.admin import (  # noqa: E402
     feedback as admin_feedback,
     notifications,
     panel,
+    payments as admin_payments,
     stats,
     subscriptions,
     system,
@@ -110,6 +111,7 @@ app.include_router(panel.router)
 app.include_router(stats.router)
 app.include_router(users.router)
 app.include_router(subscriptions.router)
+app.include_router(admin_payments.router)
 app.include_router(ai_monitoring.router)
 app.include_router(notifications.router)
 app.include_router(admin_feedback.router)

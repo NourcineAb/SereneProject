@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
+ALEMBIC_INI = Path(__file__).resolve().parent / "alembic.ini"
 
 
 def run(cmd: list[str]) -> None:

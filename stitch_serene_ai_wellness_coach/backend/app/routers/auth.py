@@ -54,10 +54,12 @@ async def register(
 ):
     exists = (await db.execute(select(User).where(User.email == body.email))).scalar_one_or_none()
     if exists:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Un compte existe déjà avec cette adresse email. Connectez-vous ou utilisez un autre email.",
-        )
+        # Anti-enumeration (M4): never reveal that an email is already
+        # registered. A duplicate returns the exact same 201 as a successful
+        # registration, WITHOUT creating an account and WITHOUT issuing tokens
+        # for someone else's session (which would be an account-takeover).
+        logger.info("register: duplicate email %s — returning 201 without creating an account", body.email)
+        return Token(access_token="", refresh_token="")
     user = User(email=body.email, name=body.name, hashed_password=hash_password(body.password))
     db.add(user)
     await db.commit()

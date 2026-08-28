@@ -333,7 +333,7 @@ async def update_user(
         user.name = body.name
     if body.is_premium is not None and body.is_premium != user.is_premium:
         if body.is_premium:
-            await grant_premium(db, user, source="admin", plan="monthly")
+            await grant_premium(db, user, source="admin", plan="monthly", provider="admin")
         else:
             await revoke_premium(db, user, source="admin", reason="canceled")
     else:
@@ -392,7 +392,7 @@ async def toggle_premium(
         await revoke_premium(db, user, source="admin", reason="canceled")
         await log_audit(db, admin, "remove_premium", target_user_id=user.id, request=request)
     else:
-        await grant_premium(db, user, source="admin", plan="monthly")
+        await grant_premium(db, user, source="admin", plan="monthly", provider="admin")
         await log_audit(db, admin, "grant_premium", target_user_id=user.id, request=request)
     return {"id": user.id, "is_premium": user.is_premium}
 

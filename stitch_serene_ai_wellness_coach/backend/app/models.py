@@ -30,6 +30,7 @@ class User(Base):
     last_login_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, default=None
     )
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
 
     sessions: Mapped[list["Session"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
@@ -198,18 +199,24 @@ class ExerciseCompletion(Base):
 
 
 class Subscription(Base):
-    """A real premium subscription record (started via RevenueCat webhook, the
-    admin panel, or the dev mock billing endpoint)."""
+    """A real premium subscription record (started via Stripe webhook,
+    RevenueCat webhook, the admin panel, or the dev mock billing endpoint)."""
 
     __tablename__ = "subscriptions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     plan: Mapped[str] = mapped_column(String(32), default="monthly")  # "monthly" | "yearly"
-    status: Mapped[str] = mapped_column(String(16), default="active")  # active | trial | canceled | expired
+    status: Mapped[str] = mapped_column(String(16), default="active")  # active | trial | canceled | expired | past_due | unpaid | incomplete | paused
     price: Mapped[float] = mapped_column(Float, default=0.0)  # amount in USD
     currency: Mapped[str] = mapped_column(String(8), default="USD")
     is_trial: Mapped[bool] = mapped_column(Boolean, default=False)
+    provider: Mapped[str] = mapped_column(String(32), default="stripe")  # stripe | revenuecat | admin
+    # Unique per provider so webhook re-deliveries can't create duplicate rows
+    # (Stripe subscription.id is unique; NULL allowed for RevenueCat/admin rows).
+    provider_subscription_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, unique=True, default=None
+    )
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     current_period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     current_period_end: Mapped[datetime | None] = mapped_column(
@@ -217,6 +224,7 @@ class Subscription(Base):
     )
     canceled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
 
     user: Mapped["User"] = relationship(back_populates="subscriptions")
     payments: Mapped[list["Payment"]] = relationship(back_populates="subscription")
@@ -234,9 +242,16 @@ class Payment(Base):
     )
     amount: Mapped[float] = mapped_column(Float, default=0.0)
     currency: Mapped[str] = mapped_column(String(8), default="USD")
-    status: Mapped[str] = mapped_column(String(16), default="succeeded")
-    source: Mapped[str] = mapped_column(String(16), default="revenuecat")  # revenuecat | admin | mock
+    status: Mapped[str] = mapped_column(String(16), default="succeeded")  # pending | succeeded | failed | refunded | canceled
+    source: Mapped[str] = mapped_column(String(16), default="stripe")  # stripe | revenuecat | admin | mock
+    provider: Mapped[str] = mapped_column(String(32), default="stripe")  # stripe | revenuecat | apple | google
+    # Unique per provider so webhook re-deliveries can't create duplicate rows
+    # (Stripe invoice.id is unique; NULL allowed for RevenueCat/admin rows).
+    provider_payment_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, unique=True, default=None
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
 
     user: Mapped["User"] = relationship(back_populates="payments")
     subscription: Mapped["Subscription | None"] = relationship(back_populates="payments")

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import pytest
 import pytest_asyncio
+from cryptography.fernet import Fernet
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -22,6 +23,11 @@ from app.database import Base, get_db
 SQLITE_URL = "sqlite+aiosqlite:///:memory:"
 
 CANNED_REPLY = "Let's try box breathing together.\n[TECHNIQUE: box_breathing]"
+
+# Runtime-generated test key (never a real key, never committed): makes the
+# EncryptedText columns encrypt in the test DB so the at-rest encryption tests
+# can assert on real ciphertext.
+_TEST_FERNET_KEY = Fernet.generate_key().decode()
 
 
 # ─── Disable rate limiting for all tests ─────────────────────────────────────
@@ -35,10 +41,12 @@ def deterministic_test_env(monkeypatch):
       ``test_api.py`` exercise the *no-signature-configured* path, so a secret
       present in a local ``.env`` would otherwise make them 401. Tests must not
       depend on local environment.
+    - Inject a generated Fernet key so at-rest encryption is real in tests.
     """
     from app.config import settings
     monkeypatch.setattr(settings, "rate_limit_enabled", False)
     monkeypatch.setattr(settings, "revenuecat_webhook_secret", "")
+    monkeypatch.setattr(settings, "field_encryption_key", _TEST_FERNET_KEY)
     # Also reset the limiter's in-memory storage between tests.
     from app.limiter import limiter
     limiter.reset()

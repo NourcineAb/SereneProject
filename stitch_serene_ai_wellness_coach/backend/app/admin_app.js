@@ -65,7 +65,7 @@ function closeMenu(){
 })();
 
 /* ── Navigation ── */
-const TABS = ['dashboard','analytics','users','subscriptions','ai','notifications','feedback','audit','system'];
+const TABS = ['dashboard','analytics','users','subscriptions','payments','ai','notifications','feedback','audit','system'];
 document.querySelectorAll('.sidebar nav a').forEach(a=>{
   a.addEventListener('click',e=>{e.preventDefault();switchTab(a.dataset.tab)});
 });
@@ -77,6 +77,7 @@ function switchTab(name){
   if(name==='analytics')loadAnalytics();
   if(name==='users'){currentPage=1;loadUsers()}
   if(name==='subscriptions')loadSubscriptions();
+  if(name==='payments')loadPayments();
   if(name==='ai')loadAI();
   if(name==='notifications'){loadNotifications();}
   if(name==='feedback')loadFeedback();
@@ -317,6 +318,8 @@ async function saveUser(id){
 
 /* ── Subscriptions ── */
 let subStatus='';
+let paymentStatusFilter='';
+let paymentProviderFilter='';
 async function loadSubscriptions(){
   const cards=document.getElementById('subs-cards');
   const tbody=document.getElementById('subs-tbody');
@@ -368,6 +371,51 @@ async function loadSubsTable(page){
   }catch(e){tbody.innerHTML='<tr><td colspan="9" class="empty">Erreur de chargement</td></tr>'}
 }
 document.getElementById('subs-filter').addEventListener('change',e=>{subStatus=e.target.value;currentPage=1;loadSubsTable()});
+
+/* ── Payments ── */
+async function loadPayments(page){
+  if(page)currentPage=page;
+  const cards=document.getElementById('payments-cards');
+  const tbody=document.getElementById('payments-tbody');
+  cards.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  tbody.innerHTML='<tr><td colspan="9" class="loading"><div class="spinner"></div></td></tr>';
+  try{
+    const o=await apiFetch('/admin/payments/overview');
+    cards.innerHTML=
+      '<div class="stat-card"><div class="icon-bubble" style="background:#16a34a;opacity:.12"><svg viewBox="0 0 24 24" fill="#16a34a"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div><div class="info"><div class="value">'+o.total_revenue+'$</div><div class="label">Revenus totaux</div></div></div>'+
+      '<div class="stat-card"><div class="icon-bubble" style="background:#0369a1;opacity:.12"><svg viewBox="0 0 24 24" fill="#0369a1"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></div><div class="info"><div class="value">'+o.month_revenue+'$</div><div class="label">Ce mois</div></div></div>'+
+      '<div class="stat-card"><div class="icon-bubble" style="background:#16a34a;opacity:.12"><svg viewBox="0 0 24 24" fill="#16a34a"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div><div class="info"><div class="value">'+o.succeeded_count+'</div><div class="label">Réussis</div></div></div>'+
+      '<div class="stat-card"><div class="icon-bubble" style="background:#ba1a1a;opacity:.12"><svg viewBox="0 0 24 24" fill="#ba1a1a"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12z"/></svg></div><div class="info"><div class="value">'+o.failed_count+'</div><div class="label">Échoués</div></div></div>'+
+      '<div class="stat-card"><div class="icon-bubble" style="background:#b45309;opacity:.12"><svg viewBox="0 0 24 24" fill="#b45309"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div><div class="info"><div class="value">'+o.pending_count+'</div><div class="label">En attente</div></div></div>'+
+    '</div>';
+    await loadPaymentsTable();
+  }catch(e){cards.innerHTML='<p class="empty">Erreur de chargement</p>'}
+}
+async function loadPaymentsTable(page){
+  if(page)currentPage=page;
+  const tbody=document.getElementById('payments-tbody');
+  try{
+    let url='/admin/payments?page='+currentPage+'&per_page=20';
+    if(paymentStatusFilter)url+='&status='+paymentStatusFilter;
+    if(paymentProviderFilter)url+='&provider='+paymentProviderFilter;
+    const d=await apiFetch(url);
+    if(!d.payments.length){tbody.innerHTML='<tr><td colspan="9" class="empty"><p>Aucun paiement</p></td></tr>';return}
+    tbody.innerHTML=d.payments.map(p=>'<tr>'+
+      '<td style="font-weight:600">'+esc(p.name||p.email||'-')+'</td>'+
+      '<td style="color:var(--on-surface-v)">'+esc(p.email||'-')+'</td>'+
+      '<td style="font-weight:600">'+esc(p.amount)+' '+esc(p.currency)+'</td>'+
+      '<td>'+esc(p.currency)+'</td>'+
+      '<td><span class="badge badge-'+(p.status==='succeeded'?'premium':p.status==='failed'?'error':'inactive')+'">'+esc(p.status)+'</span></td>'+
+      '<td>'+esc(p.provider)+'</td>'+
+      '<td>'+esc(p.source)+'</td>'+
+      '<td style="font-family:monospace;font-size:12px;color:var(--outline)">'+esc(p.provider_payment_id||'-')+'</td>'+
+      '<td style="color:var(--outline);font-size:13px">'+fmtDateTime(p.created_at)+'</td>'+
+    '</tr>').join('');
+    renderPagination(d.page,d.pages,d.total,'payments-pagination','loadPaymentsTable');
+  }catch(e){tbody.innerHTML='<tr><td colspan="9" class="empty">Erreur de chargement</td></tr>'}
+}
+document.getElementById('payments-filter-status').addEventListener('change',e=>{paymentStatusFilter=e.target.value;currentPage=1;loadPaymentsTable()});
+document.getElementById('payments-filter-provider').addEventListener('change',e=>{paymentProviderFilter=e.target.value;currentPage=1;loadPaymentsTable()});
 
 /* ── AI monitoring ── */
 async function loadAI(){

@@ -60,6 +60,12 @@ class Settings(BaseSettings):
     # RevenueCat webhook
     revenuecat_webhook_secret: str = ""
 
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_monthly: str = ""  # Stripe Price ID (e.g. price_xxx)
+    stripe_price_yearly: str = ""   # Stripe Price ID (e.g. price_xxx)
+
     # Dev-only: allow the client-callable /billing/premium mock. MUST be false in prod.
     allow_mock_billing: bool = True
 
@@ -109,6 +115,41 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment.lower() in {"production", "prod"}
+
+    @property
+    def async_database_url(self) -> str:
+        """DATABASE_URL rewritten for SQLAlchemy's asyncpg driver.
+
+        Vercel DATABASE_URL values are typically written for psycopg/libpq
+        (``postgresql://...?sslmode=require&channel_binding=require``). The app
+        connects with asyncpg, so:
+          - the sync ``postgresql://`` scheme is rewritten to
+            ``postgresql+asyncpg://``
+          - the libpq ``sslmode`` param is translated to asyncpg's ``ssl`` param
+          - the ``channel_binding`` param (unsupported by asyncpg) is dropped
+        SQLite URLs are returned untouched.
+        """
+        url = self.database_url
+        if not url.startswith("postgresql"):
+            return url
+        base, _, query = url.partition("?")
+        if not base.startswith("postgresql+asyncpg://"):
+            base = base.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if not query:
+            return base
+        kept = []
+        for item in query.split("&"):
+            if not item:
+                continue
+            key, _, value = item.partition("=")
+            k = key.strip().lower()
+            if k == "sslmode":
+                kept.append("ssl=" + (value or "require"))
+            elif k == "channel_binding":
+                continue
+            else:
+                kept.append(item)
+        return base + ("?" + "&".join(kept) if kept else "")
 
     @model_validator(mode="after")
     def _harden_production(self) -> "Settings":

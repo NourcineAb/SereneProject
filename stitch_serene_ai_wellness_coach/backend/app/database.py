@@ -24,7 +24,7 @@ def _get_engine():
             kwargs["max_overflow"] = 0
             kwargs["pool_recycle"] = 300  # recycle connections after 5 min
             kwargs["pool_timeout"] = 10   # fail fast if pool is exhausted
-        _engine = create_async_engine(settings.database_url, **kwargs)
+        _engine = create_async_engine(settings.async_database_url, **kwargs)
     return _engine
 
 

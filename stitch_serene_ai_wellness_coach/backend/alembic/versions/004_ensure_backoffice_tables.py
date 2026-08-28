@@ -1,7 +1,12 @@
-"""backoffice admin features
+"""ensure backoffice tables exist
 
-Revision ID: 002_admin_features
-Revises: 001_initial
+Databases created with ``create_all`` (before Alembic was introduced) never
+received the admin feature tables declared in revision 002. This migration
+backfills those tables idempotently — any table that already exists is left
+untouched, so existing data is never dropped or recreated.
+
+Revision ID: 004_ensure_backoffice_tables
+Revises: 003_add_missing_user_columns
 Create Date: 2026-08-02
 """
 from typing import Sequence, Union
@@ -10,37 +15,14 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision: str = "002_admin_features"
-down_revision: Union[str, None] = "001_initial"
+revision: str = "004_ensure_backoffice_tables"
+down_revision: Union[str, None] = "003_add_missing_user_columns"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
-
-_BACKOFFICE_TABLES = (
-    "subscriptions",
-    "payments",
-    "admin_notifications",
-    "feedback",
-    "admin_audit_logs",
-    "ai_usage_logs",
-    "error_logs",
-    "exercise_completions",
-)
-
-_USER_COLUMNS = (
-    "is_suspended",
-    "last_login_at",
-    "is_admin",
-    "email_verified",
-)
 
 
 def _has_table(name: str) -> bool:
     return sa.inspect(op.get_bind()).has_table(name)
-
-
-def _has_user_column(name: str) -> bool:
-    bind = op.get_bind()
-    return name in {col["name"] for col in sa.inspect(bind).get_columns("users")}
 
 
 def _create_backoffice_tables() -> None:
@@ -154,21 +136,10 @@ def _create_backoffice_tables() -> None:
 
 
 def upgrade() -> None:
-    if not _has_user_column("is_suspended"):
-        op.add_column("users", sa.Column("is_suspended", sa.Boolean(), server_default=sa.text("false"), nullable=False))
-    if not _has_user_column("last_login_at"):
-        op.add_column("users", sa.Column("last_login_at", sa.DateTime(timezone=True), nullable=True, default=None))
-    if not _has_user_column("is_admin"):
-        op.add_column("users", sa.Column("is_admin", sa.Boolean(), server_default=sa.text("false"), nullable=False))
-    if not _has_user_column("email_verified"):
-        op.add_column("users", sa.Column("email_verified", sa.Boolean(), server_default=sa.text("false"), nullable=False))
     _create_backoffice_tables()
 
 
 def downgrade() -> None:
-    for table in reversed(_BACKOFFICE_TABLES):
-        if _has_table(table):
-            op.drop_table(table)
-    for column in reversed(_USER_COLUMNS):
-        if _has_user_column(column):
-            op.drop_column("users", column)
+    """No-op by design: the tables may pre-date this migration (created by
+    ``create_all`` or revision 002), so they are never dropped here to avoid
+    destroying existing data."""

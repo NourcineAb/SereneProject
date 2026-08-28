@@ -62,6 +62,10 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
         Abonnements
       </a>
+      <a href="#" data-tab="payments">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+        Paiements
+      </a>
       <a href="#" data-tab="ai">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.12-.1.17-.24.12-.37l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.12.1-.17.24-.12.37l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/></svg>
         IA
@@ -192,6 +196,41 @@
           </thead>
           <tbody id="expiring-tbody"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div id="page-payments" style="display:none">
+      <h2>Paiements</h2>
+      <p class="subtitle">Transactions, revenus et statuts de paiement</p>
+      <div id="payments-cards" class="stats-grid"></div>
+      <div class="table-wrap">
+        <div class="table-toolbar">
+          <select id="payments-filter-status">
+            <option value="">Tous les statuts</option>
+            <option value="succeeded">Réussi</option>
+            <option value="pending">En attente</option>
+            <option value="failed">Échoué</option>
+            <option value="refunded">Remboursé</option>
+            <option value="canceled">Annulé</option>
+          </select>
+          <select id="payments-filter-provider">
+            <option value="">Tous les fournisseurs</option>
+            <option value="stripe">Stripe</option>
+            <option value="revenuecat">RevenueCat</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Utilisateur</th><th>Email</th><th>Montant</th><th>Devise</th><th>Statut</th>
+              <th>Fournisseur</th><th>Source</th><th>ID paiement</th><th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="payments-tbody"></tbody>
+        </table>
+        <div class="pagination" id="payments-pagination"></div>
       </div>
     </div>
 
