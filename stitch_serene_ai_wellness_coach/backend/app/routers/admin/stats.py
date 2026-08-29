@@ -289,6 +289,15 @@ async def admin_stats(
         )
     ).scalar() or 0
 
+    # Payments (real rows) for the dashboard card.
+    payments_total = (await db.execute(select(func.count(Payment.id)))).scalar() or 0
+    payments_succeeded = (
+        await db.execute(select(func.count(Payment.id)).where(Payment.status == "succeeded"))
+    ).scalar() or 0
+    payments_failed = (
+        await db.execute(select(func.count(Payment.id)).where(Payment.status == "failed"))
+    ).scalar() or 0
+
     technique_distribution = await _techniques(db, 7)
 
     mood_rows = (
@@ -354,6 +363,11 @@ async def admin_stats(
             "trials": trial_subs,
             "canceled": canceled_subs,
             "expiring_7d": expiring_7d,
+        },
+        "payments": {
+            "total": payments_total,
+            "succeeded": payments_succeeded,
+            "failed": payments_failed,
         },
         "ai": {
             "requests_7d": ai_requests_7d,

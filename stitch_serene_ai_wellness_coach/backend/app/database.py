@@ -53,6 +53,12 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+async def close_db() -> None:
+    """Dispose the cached async engine (for scripts/process shutdown)."""
+    if _engine is not None:
+        await _engine.dispose()
+
+
 async def init_db() -> None:
     """Create all tables (dev only — use Alembic in production)."""
     from . import models  # noqa: F401

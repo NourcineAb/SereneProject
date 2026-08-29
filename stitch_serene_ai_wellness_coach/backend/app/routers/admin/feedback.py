@@ -106,3 +106,25 @@ async def update_feedback_status(
         request=request,
     )
     return {"id": item.id, "status": item.status}
+
+
+@router.delete("/feedback/{feedback_id}")
+async def delete_feedback(
+    feedback_id: int,
+    request: Request,
+    admin: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    item = (
+        await db.execute(select(Feedback).where(Feedback.id == feedback_id))
+    ).scalar_one_or_none()
+    if not item:
+        raise HTTPException(404, "Feedback not found")
+    await db.delete(item)
+    await db.commit()
+    await log_audit(
+        db, admin, "delete_feedback",
+        details=f"feedback={feedback_id}",
+        request=request,
+    )
+    return {"ok": True}

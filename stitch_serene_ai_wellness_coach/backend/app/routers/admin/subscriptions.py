@@ -105,6 +105,7 @@ async def list_subscriptions(
     admin: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
     status: str = Query("", description="active|trial|canceled|expired"),
+    provider: str = Query("", description="stripe|revenuecat|admin"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
 ):
@@ -113,6 +114,9 @@ async def list_subscriptions(
     if status:
         query = query.where(Subscription.status == status)
         count_query = count_query.where(Subscription.status == status)
+    if provider:
+        query = query.where(Subscription.provider == provider)
+        count_query = count_query.where(Subscription.provider == provider)
 
     total = (await db.execute(count_query)).scalar() or 0
     subs = (
@@ -138,9 +142,11 @@ async def list_subscriptions(
                 "name": user.name if user else None,
                 "plan": s.plan,
                 "status": s.status,
+                "provider": s.provider,
                 "price": s.price,
                 "currency": s.currency,
                 "is_trial": s.is_trial,
+                "provider_subscription_id": s.provider_subscription_id,
                 "started_at": s.started_at.isoformat() if s.started_at else None,
                 "period_end": s.current_period_end.isoformat() if s.current_period_end else None,
                 "canceled_at": s.canceled_at.isoformat() if s.canceled_at else None,
