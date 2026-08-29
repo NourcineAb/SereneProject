@@ -59,26 +59,51 @@ from app.security import hash_password  # noqa: E402
 
 DEMO_USERS = [
     # (email, name, is_premium, provider)
-    ("demo.nour@serene.app", "Nour Ben Amor", True, "stripe"),
-    ("demo.yasmine@serene.app", "Yasmine Trabelsi", True, "revenuecat"),
-    ("demo.mohamed@serene.app", "Mohamed Ben Salem", True, "trial"),
-    ("demo.mariem@serene.app", "Mariem Gharbi", True, "admin"),
-    ("demo.ahmed@serene.app", "Ahmed Jlassi", False, None),
-    ("demo.ines@serene.app", "Inès Mejri", False, None),
-    ("demo.seif@serene.app", "Seif Ben Youssef", True, "stripe"),
+    ("nour.benamor@serene.app", "Nour Ben Amor", True, "stripe"),
+    ("yasmine.trabelsi@serene.app", "Yasmine Trabelsi", True, "revenuecat"),
+    ("mohamed.bensalem@serene.app", "Mohamed Ben Salem", True, "trial"),
+    ("mariem.gharbi@serene.app", "Mariem Gharbi", True, "admin"),
+    ("ahmed.jlassi@serene.app", "Ahmed Jlassi", False, None),
+    ("ines.mejri@serene.app", "Inès Mejri", False, None),
+    ("seif.benyoussef@serene.app", "Seif Ben Youssef", True, "stripe"),
 ]
 
-# Map legacy demo emails (older seed runs) to their new Tunisian demo identity.
-# This lets the seeder rename already-seeded demo users in place (preserving
-# relations and avoiding duplicates) while staying idempotent.
+# Legacy demo emails (from earlier seed generations) → new realistic demo identity.
+# The seeder renames already-seeded demo users in place (preserving user_id and
+# all relations: premium, subscriptions, payments, sessions, moods, AI logs),
+# avoiding duplicates and staying idempotent. Demo accounts are never real —
+# no email is ever sent, no real Gmail/other account is created or used.
+# Each target maps to candidate source emails (most recent generation first) so
+# an already-present account is migrated in place rather than duplicated.
 DEMO_MIGRATE = {
-    "demo.stripe@serene.app": ("demo.nour@serene.app", "Nour Ben Amor"),
-    "demo.revenuecat@serene.app": ("demo.yasmine@serene.app", "Yasmine Trabelsi"),
-    "demo.trial@serene.app": ("demo.mohamed@serene.app", "Mohamed Ben Salem"),
-    "demo.admin@serene.app": ("demo.mariem@serene.app", "Mariem Gharbi"),
-    "demo.free@serene.app": ("demo.ahmed@serene.app", "Ahmed Jlassi"),
-    "demo.free2@serene.app": ("demo.ines@serene.app", "Inès Mejri"),
-    "demo.manager@serene.app": ("demo.seif@serene.app", "Seif Ben Youssef"),
+    "nour.benamor@serene.app": (
+        ("nour.benamor@serene-demo.com", "demo.nour@serene.app", "demo.stripe@serene.app"),
+        "Nour Ben Amor",
+    ),
+    "yasmine.trabelsi@serene.app": (
+        ("yasmine.trabelsi@serene-demo.com", "demo.yasmine@serene.app", "demo.revenuecat@serene.app"),
+        "Yasmine Trabelsi",
+    ),
+    "mohamed.bensalem@serene.app": (
+        ("mohamed.bensalem@serene-demo.com", "demo.mohamed@serene.app", "demo.trial@serene.app"),
+        "Mohamed Ben Salem",
+    ),
+    "mariem.gharbi@serene.app": (
+        ("mariem.gharbi@serene-demo.com", "demo.mariem@serene.app", "demo.admin@serene.app"),
+        "Mariem Gharbi",
+    ),
+    "ahmed.jlassi@serene.app": (
+        ("ahmed.jlassi@serene-demo.com", "demo.ahmed@serene.app", "demo.free@serene.app"),
+        "Ahmed Jlassi",
+    ),
+    "ines.mejri@serene.app": (
+        ("ines.mejri@serene-demo.com", "demo.ines@serene.app", "demo.free2@serene.app"),
+        "Inès Mejri",
+    ),
+    "seif.benyoussef@serene.app": (
+        ("seif.benyoussef@serene-demo.com", "demo.seif@serene.app", "demo.manager@serene.app"),
+        "Seif Ben Youssef",
+    ),
 }
 
 DEMO_PASSWORD = "SereneDemo2026!"
@@ -142,22 +167,27 @@ async def seed(session) -> None:
             print(f"  • {email} already present, skipping.")
             continue
 
-        # Migrate any legacy demo account (old email) to this demo identity in
-        # place: rename + re-email so relations (premium, subs, payments,
-        # sessions, moods, AI logs) stay intact and no duplicates are created.
+        # Migrate any legacy demo account (old email, old or newer generation)
+        # to this demo identity in place: rename + re-email so relations
+        # (premium, subs, payments, sessions, moods, AI logs) stay intact and
+        # no duplicates are created.
         migrated = False
-        for old, (new_email, new_name) in DEMO_MIGRATE.items():
-            if new_email == email:
-                legacy = (
-                    await session.execute(select(User).where(User.email == old))
-                ).scalar_one_or_none()
-                if legacy:
-                    legacy.email = email
-                    legacy.name = new_name
-                    await session.commit()
-                    print(f"  • {old} → {email} ({new_name}) migrated.")
-                    migrated = True
-                break
+        if email in DEMO_MIGRATE:
+            legacy_groups, name = DEMO_MIGRATE[email][:-1], DEMO_MIGRATE[email][-1]
+            for group in legacy_groups:
+                for old in group:
+                    legacy = (
+                        await session.execute(select(User).where(User.email == old))
+                    ).scalar_one_or_none()
+                    if legacy:
+                        legacy.email = email
+                        legacy.name = name
+                        await session.commit()
+                        print(f"  • {old} → {email} ({name}) migrated.")
+                        migrated = True
+                        break
+                if migrated:
+                    break
         if migrated:
             continue
 
