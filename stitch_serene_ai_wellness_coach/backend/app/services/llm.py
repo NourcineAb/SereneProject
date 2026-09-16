@@ -14,9 +14,103 @@ from dataclasses import dataclass
 
 import httpx
 
+import re
+
 from ..config import settings
 
 logger = logging.getLogger("serene.llm")
+
+
+# ── Reasoning-pattern cleanup (safety net) ──────────────────────────────────
+# Some free models leak internal reasoning despite prompt instructions.
+# We strip common reasoning phrases (English + French) that appear at the
+# START of a reply, plus any markdown-style <thinking>/<reasoning> blocks.
+
+_REASONING_MARKERS = (
+    "the user just said",
+    "the user just wrote",
+    "the user just asked",
+    "the user mentioned",
+    "the user is asking",
+    "the user is saying",
+    "the user is expressing",
+    "the user said",
+    "the user wrote",
+    "let me check",
+    "let me think",
+    "let me consider",
+    "i need to",
+    "i should",
+    "i'll respond",
+    "okay, so",
+    "okay, the user",
+    "so, the user",
+    "according to the guidelines",
+    "according to the instructions",
+    "according to the prompt",
+    "based on the guidelines",
+    "l'utilisateur vient de dire",
+    "l'utilisateur vient d'écrire",
+    "l'utilisateur a dit",
+    "l'utilisateur demande",
+    "l'utilisateur est",
+    "je dois",
+    "il faut que je",
+    "voyons",
+    "réfléchissons",
+    "selon les règles",
+    "selon les directives",
+    "selon les consignes",
+    "attendez,",
+)
+
+_THINKING_BLOCK = re.compile(r"<(thinking|reasoning|scratchpad)[^>]*>.*?</\1>", re.IGNORECASE | re.DOTALL)
+
+# Split lines at sentence boundaries so we can cut reasoning fragments while
+# keeping the actual reply, even when both share a single line.
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+|\u2014\s+|\u2013\s+")
+
+_LEADING_NOISE = " \t\r\n\"'*_•-–—«»()[]"
+
+
+def _starts_with_reasoning(text: str) -> bool:
+    low = text.lower().lstrip(_LEADING_NOISE)
+    return any(low.startswith(m) for m in _REASONING_MARKERS)
+
+
+def _trim_reasoning_line(line: str) -> str:
+    """Cut leading reasoning sentences from ``line``, keep the rest."""
+    fragments = [f.strip() for f in _SENTENCE_SPLIT.split(line.strip()) if f.strip()]
+    kept: list[str] = []
+    for frag in fragments:
+        if not kept and _starts_with_reasoning(frag):
+            continue
+        kept.append(frag)
+    return " ".join(kept)
+
+
+def _strip_leaked_reasoning(text: str) -> str:
+    """Remove reasoning prefixes that some models prepend to their output."""
+    cleaned = _THINKING_BLOCK.sub("", text)
+    out_lines: list[str] = []
+    skipped_leading = True
+    for line in cleaned.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            out_lines.append(line)
+            continue
+        if skipped_leading and _starts_with_reasoning(stripped):
+            trimmed = _trim_reasoning_line(stripped)
+            if trimmed and not _starts_with_reasoning(trimmed):
+                out_lines.append(trimmed)
+                skipped_leading = False
+            continue
+        skipped_leading = False
+        out_lines.append(line)
+    cleaned = "\n".join(out_lines).strip()
+    if not cleaned:
+        return text.strip()
+    return cleaned
 
 # Keys containing these substrings are treated as unfilled placeholders, not
 # real credentials. This lets the app detect "no real key configured" and fall
@@ -241,7 +335,7 @@ async def generate(system: str, history: list[dict], *, report: dict | None = No
     try:
         result = await _call_openrouter(system, history)
         _finish("success", model=result.model, usage=result.usage)
-        return result.content
+        return _strip_leaked_reasoning(result.content)
     except Exception as e:  # noqa: BLE001
         # OpenRouter completely failed — fall back to offline demo coach so
         # the chat flow still works instead of returning a hard 503 to the
