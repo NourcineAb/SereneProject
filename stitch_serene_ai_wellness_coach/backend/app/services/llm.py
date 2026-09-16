@@ -7,14 +7,12 @@ never breaks due to upstream rate limits or outages.
 
 from __future__ import annotations
 
-import asyncio
 import logging
+import re
 import time
 from dataclasses import dataclass
 
 import httpx
-
-import re
 
 from ..config import settings
 
@@ -27,6 +25,7 @@ logger = logging.getLogger("serene.llm")
 # START of a reply, plus any markdown-style <thinking>/<reasoning> blocks.
 
 _REASONING_MARKERS = (
+    # English: third-person reasoning about "the user"
     "the user just said",
     "the user just wrote",
     "the user just asked",
@@ -36,12 +35,28 @@ _REASONING_MARKERS = (
     "the user is expressing",
     "the user said",
     "the user wrote",
+    "the user needs",
+    "the user wants",
+    "the user is",
+    "the user",
+    "i need to respond",
+    "i need to address",
+    "i should respond",
+    "i should address",
+    "i think the user",
     "let me check",
     "let me think",
     "let me consider",
-    "i need to",
-    "i should",
-    "i'll respond",
+    "let me analyze",
+    "let me address",
+    "let's help",
+    "here's a thinking",
+    "here's my reasoning",
+    "first, i need",
+    "first, let me",
+    "since the user",
+    "since they",
+    "maybe the user",
     "okay, so",
     "okay, the user",
     "so, the user",
@@ -49,15 +64,21 @@ _REASONING_MARKERS = (
     "according to the instructions",
     "according to the prompt",
     "based on the guidelines",
+    # French: third-person reasoning about "l'utilisateur"
     "l'utilisateur vient de dire",
     "l'utilisateur vient d'écrire",
     "l'utilisateur a dit",
     "l'utilisateur demande",
+    "l'utilisateur a besoin",
+    "l'utilisateur veut",
     "l'utilisateur est",
-    "je dois",
+    "l'utilisateur",
+    "je dois d'abord",
+    "je dois maintenant",
     "il faut que je",
     "voyons",
     "réfléchissons",
+    "d'abord, je dois",
     "selon les règles",
     "selon les directives",
     "selon les consignes",
@@ -191,7 +212,7 @@ async def _demo_generate(system: str, history: list[dict]) -> str:
     return reply
 
 
-TIMEOUT = httpx.Timeout(30.0, connect=10.0)
+TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -204,17 +225,20 @@ def _to_openai_messages(system: str, history: list[dict]) -> list[dict]:
     return [{"role": "system", "content": system}, *history]
 
 
-# Ordered list of free OpenRouter models. The primary model is always tried
-# first; on failure the next models in this list are tried in order.
-# All are :free tier — no credits required.
+# Ordered list of free OpenRouter models, fastest & cleanest first. The primary
+# model is always tried first; on failure the next models in this list are tried
+# in order. All are :free tier — no credits required.
+#
+# Order chosen from live latency probes (Sept 2026): the first two respond in
+# ~6-9s with direct, reasoning-free replies. The last model (nemotron ultra) is
+# a slow emergency fallback only.
 _OPENROUTER_FREE_MODELS = (
+    "inclusionai/ling-3.0-flash-sante:free",
+    "poolside/laguna-xs-2.1:free",
+    "poolside/laguna-s-2.1:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "google/gemma-4-31b-it:free",
     "nvidia/nemotron-3-ultra-550b-a55b:free",
-    "google/gemma-3-27b-it:free",
-    "meta-llama/llama-4-maverick:free",
-    "deepseek/deepseek-chat-v3-0324:free",
-    "qwen/qwen3-235b-a22b:free",
-    "poolside/laguna-m.1:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
 )
 
 
@@ -245,56 +269,45 @@ async def _call_openrouter(system: str, history: list[dict]) -> LLMResult:
             payload = {
                 "model": model,
                 "messages": messages,
-                "max_tokens": 512,
+                "max_tokens": 256,
                 "temperature": 0.7,
             }
-            # One immediate try + a single short retry on a transient 429, then
-            # fail over to the next free model (faster than retrying one model).
-            for attempt in range(2):
-                try:
-                    r = await client.post(OPENROUTER_URL, headers=headers, json=payload)
-                except httpx.TimeoutException:
-                    last_err = f"Timeout on {model} (attempt {attempt + 1})"
-                    logger.warning("LLM timeout on %s (attempt %d)", model, attempt + 1)
-                    if attempt == 0:
-                        await asyncio.sleep(1.0)
-                    continue
-                except httpx.ConnectError as e:
-                    last_err = f"Connection error on {model}: {e}"
-                    logger.warning("LLM connection error on %s: %s", model, e)
-                    break  # Don't retry connection errors
-                except httpx.HTTPError as e:
-                    last_err = f"HTTP error on {model}: {e}"
-                    logger.warning("LLM HTTP error on %s: %s", model, e)
-                    break
+            # One attempt per model — no in-model retries, no sleeps. Fail over
+            # immediately so a stuck/rate-limited model never delays the reply.
+            try:
+                r = await client.post(OPENROUTER_URL, headers=headers, json=payload)
+            except httpx.TimeoutException:
+                last_err = f"Timeout on {model}"
+                logger.warning("LLM timeout on %s, failing over", model)
+                continue
+            except httpx.ConnectError as e:
+                last_err = f"Connection error on {model}: {e}"
+                logger.warning("LLM connection error on %s, failing over", model)
+                continue
+            except httpx.HTTPError as e:
+                last_err = f"HTTP error on {model}: {e}"
+                logger.warning("LLM HTTP error on %s, failing over", model)
+                continue
 
-                if r.status_code == 401:
-                    raise LLMError("OpenRouter 401: invalid API key")
-                if r.status_code == 429 and attempt == 0:
-                    logger.info("LLM rate-limited on %s, retrying in 1.5s", model)
-                    await asyncio.sleep(1.5)
+            if r.status_code == 401:
+                raise LLMError("OpenRouter 401: invalid API key")
+            if r.status_code >= 400:
+                last_err = f"Error ({r.status_code}) on {model}: {r.text[:200]}"
+                logger.warning("LLM %d on %s, failing over", r.status_code, model)
+                continue
+            data = r.json()
+            try:
+                content = (data["choices"][0]["message"].get("content") or "").strip()
+                if not content:
+                    last_err = f"Empty content from {model}"
+                    logger.warning("LLM empty content on %s, failing over", model)
                     continue
-                if r.status_code == 429:
-                    last_err = f"Rate limited (429) on {model}"
-                    logger.warning("LLM 429 on %s, failing over to next model", model)
-                    break
-                if r.status_code >= 500:
-                    last_err = f"Server error ({r.status_code}) on {model}"
-                    logger.warning("LLM %d on %s, failing over", r.status_code, model)
-                    break
-                if r.status_code >= 400:
-                    last_err = f"Client error ({r.status_code}) on {model}: {r.text[:200]}"
-                    logger.warning("LLM %d on %s: %s", r.status_code, model, r.text[:200])
-                    break
-                data = r.json()
-                try:
-                    content = data["choices"][0]["message"]["content"].strip()
-                    usage = data.get("usage") or {}
-                    logger.info("LLM success on model=%s (attempt %d)", model, attempt + 1)
-                    return LLMResult(content=content, model=model, usage=usage)
-                except (KeyError, IndexError) as e:
-                    last_err = f"Unexpected response from {model}: {data}"
-                    raise LLMError(last_err) from e
+                usage = data.get("usage") or {}
+                logger.info("LLM success on model=%s", model)
+                return LLMResult(content=content, model=model, usage=usage)
+            except (KeyError, IndexError, AttributeError) as e:
+                last_err = f"Unexpected response from {model}: {data}"
+                raise LLMError(last_err) from e
     raise LLMError(
         f"{last_err or 'OpenRouter: all models exhausted'} | tried: {', '.join(models_tried)}"
     )

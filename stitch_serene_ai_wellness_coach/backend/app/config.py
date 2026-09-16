@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     # LLM backend — OpenRouter only
     llm_primary: str = "openrouter"
     openrouter_api_key: str = ""
-    openrouter_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
+    openrouter_model: str = "inclusionai/ling-3.0-flash-sante:free"
 
     # Freemium / monetization. "iap" | "ads" | "both".
     monetization_mode: str = "iap"
