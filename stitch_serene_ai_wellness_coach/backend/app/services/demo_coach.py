@@ -96,6 +96,13 @@ _INTENTS: tuple[tuple[str, str | None, tuple[str, ...]], ...] = (
         "motiv", "demotiv", "procrast", "flemme", "envie de rien", "lazy",
         "حافز", "دافع", "حماس",
     )),
+    ("fun", None, (
+        "amuser", "amus", "m'amuse", "t'amuse", "s'amuse", "jouer", "jouons",
+        "jeux", "fun", "play", "distraire", "divertir", "rigoler",
+        "rire", "laugh", "joie", "joy", "joyeux", "joyeuse", "heureux",
+        "heureuse", "happy", "sourire", "smile", "مرح", "المرح", "لعب", "فرح",
+        "سعادة",
+    )),
     ("thanks", None, (
         "merci", "thanks", "thank you", "شكرا", "شكراً",
     )),
@@ -162,6 +169,11 @@ _LANG_REPLIES: dict[str, dict[str, str]] = {
             "qui te prendra moins de 5 minutes — s'habiller, ranger un tiroir — et commence "
             "seulement celle-là. Quelle micro-étape choisirais-tu ?"
         ),
+        "fun": (
+            "Excellente idée de te changer les idées ! Mets une chanson qui te fait sourire "
+            "et danse pendant 3 minutes, sans jugement, ou appelle quelqu'un qui te fait rire. "
+            "Qu'est-ce qui te ferait le plus plaisir là, tout de suite ?"
+        ),
         "thanks": (
             "Avec plaisir ! Je suis là quand tu en as besoin. Prends soin de toi."
         ),
@@ -225,6 +237,11 @@ _LANG_REPLIES: dict[str, dict[str, str]] = {
             "that takes under 5 minutes — getting dressed, clearing a drawer — and start "
             "with that one only. Which micro-step would you choose?"
         ),
+        "fun": (
+            "Excellent idea to switch things up! Play a song that makes you smile and "
+            "dance for 3 minutes, no judgment, or call someone who makes you laugh. "
+            "What would bring you the most joy right now?"
+        ),
         "thanks": (
             "Anytime! I'm here whenever you need. Take care of yourself."
         ),
@@ -277,6 +294,10 @@ _LANG_REPLIES: dict[str, dict[str, str]] = {
         "motivation": (
             "نقص الحافز يُستعاد بخطوات صغيرة. اختر فعلًا واحدًا صغيرًا لا يتجاوز 5 دقائق — "
             "الاستعداد، ترتيب درج — وابدأ به فقط. ما هي الخطوة الصغيرة التي تختارها؟"
+        ),
+        "fun": (
+            "فكرة رائعة لتغيير الأجواء! ضع أغنية تجعلك تبتسم وارقص لمدة 3 دقائق دون حرج، "
+            "أو اتصل بشخص يجعلك تضحك. ما الذي سيسعدك الآن؟"
         ),
         "thanks": (
             "بكل سرور! أنا هنا متى احتجت. اعتني بنفسك."

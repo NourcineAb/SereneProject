@@ -114,6 +114,7 @@ class TestDemoGenerate:
             ("mal a l'aise", "5-4-3-2-1"),
             ("ça va pas", "inspire"),
             ("stress", "inspire"),
+            ("je veux m'amuser", "danse"),
             ("avance", ""),
         ],
     )
@@ -173,6 +174,20 @@ class TestDemoGenerate:
         ]
         out = await llm._demo_generate("", history)
         assert "[TECHNIQUE: box_breathing]" in out
+        _assert_not_generic(out)
+
+    @pytest.mark.asyncio
+    async def test_fun_intent_is_light_and_not_context_leaked(self):
+        # A clear playful message must get its own light reply, NOT inherit the
+        # previous (focus/anxiety) topic from the conversation context.
+        history = [
+            {"role": "user", "content": "je ne peux pas concentrer comme il faut"},
+            {"role": "assistant", "content": "Pause deux minutes."},
+            {"role": "user", "content": "je veux m'amuser"},
+        ]
+        out = await llm._demo_generate("", history)
+        assert "[TECHNIQUE:" not in out  # no wellness technique for fun
+        assert "danse" in out.lower() or "chanson" in out.lower()
         _assert_not_generic(out)
 
 
