@@ -9,6 +9,7 @@ import pytest
 import pytest_asyncio
 
 import app.services.llm as llm
+from app.services.llm import _strip_leaked_reasoning
 
 
 # ─── _strip_leaked_reasoning ─────────────────────────────────────────────────
@@ -70,24 +71,79 @@ class TestDetectLanguage:
 
 # ─── _demo_generate (offline fallback) ───────────────────────────────────────
 
+_GENERIC_PHRASES = (
+    "Je t'écoute. Peux-tu m'en dire un peu plus",
+    "I'm listening. Could you tell me a bit more",
+    "أنا أستمع إليك. هل يمكنك إخباري المزيد",
+)
+
+
+def _assert_not_generic(out: str) -> None:
+    for p in _GENERIC_PHRASES:
+        assert p not in out, f"Generic filler response returned: {out!r}"
+
+
 class TestDemoGenerate:
+    @pytest.mark.parametrize(
+        ("msg", "tag", "needle"),
+        [
+            ("je suis anxieuse", "box_breathing", "inspire"),
+            ("je ne peux pas me concentrer", "box_breathing", "pause"),
+            ("mal à l'aise", "grounding_54321", "5-4-3-2-1"),
+            ("je suis fatiguée", "box_breathing", "micro-pause"),
+            ("I'm stressed", "box_breathing", "breathe"),
+            ("أنا أشعر بالقلق", "box_breathing", "استنشق"),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_mandatory_messages_are_concrete_and_earmarked(self, msg, tag, needle):
+        """The offline coach must react to the actual message, propose a real
+        action, keep the technique tag, use the right language, and never fall
+        back to the generic filler."""
+        out = await llm._demo_generate("", [{"role": "user", "content": msg}])
+        assert f"[TECHNIQUE: {tag}]" in out, f"{msg!r} -> {out!r}"
+        assert needle in out.lower(), f"{msg!r} expected {needle!r} in {out!r}"
+        assert llm._detect_language(out) == llm._detect_language(msg)
+        _assert_not_generic(out)
+        assert _strip_leaked_reasoning(out) == out  # no reasoning leaks
+
+    @pytest.mark.parametrize(
+        ("msg", "needle"),
+        [
+            ("je ne peux pas concentrer comme il faut", "pause"),
+            ("mal a l'aise", "5-4-3-2-1"),
+            ("ça va pas", "inspire"),
+            ("stress", "inspire"),
+            ("avance", ""),
+        ],
+    )
+    @pytest.mark.asyncio
+    async def test_loosely_typed_messages_still_get_a_useful_reply(self, msg, needle):
+        """Short or fuzzy messages must not systematically produce the generic
+        'm'en dire plus' reply."""
+        out = await llm._demo_generate("", [{"role": "user", "content": msg}])
+        _assert_not_generic(out)
+        assert "[TECHNIQUE:" not in out or len(out) > 40  # still a full reply
+        if needle:
+            assert needle in out.lower(), f"{msg!r} expected {needle!r} in {out!r}"
+
     @pytest.mark.asyncio
     async def test_replies_in_french_for_french_input(self):
         out = await llm._demo_generate("", [{"role": "user", "content": "je suis anxieuse"}])
-        assert "respiration" in out or "Respire" in out
+        assert "inspire" in out
         assert "[TECHNIQUE: box_breathing]" in out
 
     @pytest.mark.asyncio
     async def test_replies_in_english_for_english_input(self):
         out = await llm._demo_generate("", [{"role": "user", "content": "I'm feeling stressed today"}])
         assert "[TECHNIQUE: box_breathing]" in out
-        assert any(w in out for w in ["inhale", "breath", "breathe"])
+        assert "breathe" in out
 
     @pytest.mark.asyncio
     async def test_replies_in_arabic_for_arabic_input(self):
         out = await llm._demo_generate("", [{"role": "user", "content": "أنا أشعر بالقلق"}])
         assert "[TECHNIQUE: box_breathing]" in out
-        assert "\u062a\u0646\u0641\u0633" in out  # التنفس (breath) present
+        assert "استنشق" in out  # 'inhale' present
 
     @pytest.mark.asyncio
     async def test_anxious_knows_feminine_form(self):
@@ -95,6 +151,29 @@ class TestDemoGenerate:
         # generic greeting instead of the breathing exercise.
         out = await llm._demo_generate("", [{"role": "user", "content": "je suis anxieuse"}])
         assert "[TECHNIQUE: box_breathing]" in out
+
+    @pytest.mark.asyncio
+    async def test_fallback_rotates_and_is_not_a_single_repeat(self):
+        replies = {
+            await llm._demo_generate("", [{"role": "user", "content": m}])
+            for m in ("bon", "ok", "ensuite", "voilà", "hum", "rien")
+        }
+        assert len(replies) >= 2, f"fallback is always the same reply: {replies}"
+        for out in replies:
+            _assert_not_generic(out)
+
+    @pytest.mark.asyncio
+    async def test_short_reply_reuses_conversation_context(self):
+        # "avance" alone is meaningless; the coach must look at the earlier
+        # message ("stress") and keep proposing the breathing exercise.
+        history = [
+            {"role": "user", "content": "j'ai beaucoup de stress au travail"},
+            {"role": "assistant", "content": "Respire avec moi."},
+            {"role": "user", "content": "avance"},
+        ]
+        out = await llm._demo_generate("", history)
+        assert "[TECHNIQUE: box_breathing]" in out
+        _assert_not_generic(out)
 
 
 # ─── _call_openrouter payload construction ───────────────────────────────────
